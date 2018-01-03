@@ -1,0 +1,48 @@
+{{- $envValues := pluck .Values.global.env .Values | first | default .Values }}
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "tcomp-oss-all.fullname" . }}
+  labels:
+{{ include "tcomp-oss-all.labels" . | indent 4 }}
+spec:
+  replicas: {{ default .Values.replicaCount $envValues.replicaCount | int }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "tcomp-oss-all.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+        - name: {{ template "tcomp-oss-all.registryKey" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ template "tcomp-oss-all.image" . }}
+          imagePullPolicy: {{ default .Values.image $envValues.image | pluck "pullPolicy" | first | default .Values.image.pullPolicy }}
+          ports:
+            - name: {{ template "tcomp-oss-all.servicePortName" . }}
+              containerPort: {{ default .Values.service $envValues.service | pluck "defaultPort" | first | default .Values.service.defaultPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ template "tcomp-oss-all.fullname" . }}
+          livenessProbe:
+            httpGet:
+              path: /tcomp/health
+              port: {{ template "tcomp-oss-all.servicePortName" . }}
+            initialDelaySeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /tcomp/health
+              port: {{ template "tcomp-oss-all.servicePortName" . }}
+            initialDelaySeconds: 20
+            timeoutSeconds: 5
+          {{- if $envValues.resources }}
+          resources:
+            {{ toYaml $envValues.resources | indent 12 }}
+          {{- end }}
+      {{- if $envValues.nodeAffinity }}
+      affinity:
+        nodeAffinity:
+          {{ toYaml $envValues.nodeAffinity | indent 10 }}
+      {{- end }}

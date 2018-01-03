@@ -1,0 +1,16 @@
+{{- $envValues := pluck .Values.global.env .Values | first | default .Values }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "tcomp-oss-all.fullname" . }}
+  labels:
+{{ include "tcomp-oss-all.labels" . | indent 4 }}
+spec:
+  type: {{ default .Values.service $envValues.service | pluck "type" | first | default .Values.service.type }}
+  ports:
+    - name: {{ template "tcomp-oss-all.servicePortName" . }}
+      port: {{ default .Values.service $envValues.service | pluck "defaultPort" | first | default .Values.service.defaultPort }}
+      targetPort: {{ template "tcomp-oss-all.servicePortName" . }}
+  selector:
+    app: {{ template "tcomp-oss-all.name" . }}
+    release: {{ .Release.Name }}

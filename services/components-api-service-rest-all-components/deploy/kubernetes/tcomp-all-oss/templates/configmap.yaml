@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "tcomp-oss-all.fullname" . }}
+data:
+  KAFKA_ON: {{ .Values.global.kafkaLogOn | default "false" | quote }}
+  KAFKA_SSL_ON: {{ .Values.global.kafkaLogSslOn | default "false" | quote }}
+  KAFKA_HOSTS: {{ .Values.global.kafkaLogHosts | default "kafka:9082" | quote }}
+  KAFKA_TOPIC: {{ .Values.global.kafkaLogTopic | default "tpsvclogs" | quote }}
