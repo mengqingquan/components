@@ -39,14 +39,20 @@ These values can be configured independently for different releases (i.e. prod, 
 
 Parameter                      | Description	                                    | Default
 -------------------------------|--------------------------------------------------|--------------------------------
-`registryKey`                  | k8s secret for the docker registry               | talendregistry
+`global.env`                   | Deployment environment                           | dev
+`global.registryKey`           | k8s secret for the docker registry               | talendregistry
 `replicaCount`                 | Number of containers running in parallel         | 1
-`global.registry`              | Docker registry                                  | registry.datapwn.com
-`global.repositoryUser`        | GitHub user name                                 | talend
-`image.repositoryName`         | GitHub repo name                                 | 
-`image.tag`                    | Image tag/version                                | 
+`image.registry`               | Docker registry                                  | registry.datapwn.com
+`image.path`                   | Docker image full path                           | talend/tcomp-components-api-service-rest-all-components-master:<tag>
 `image.pullPolicy`             | Image pull policy	                              | IfNotPresent
-`service.name`                 | k8s service name                                 | 
+`service.type`                 | k8s service type                                 | ClusterIP
+`service.defaultPort`          | k8s service port                                 | 
+`javaOpts`                     | JRE options                                      | -Xmx256M
+`persistence.enabled`          | Use a PVC to persist data                        | `true`
+`persistence.storageClass`     | Storage class of backing PVC                     | `nil` (uses alpha storage class annotation)
+`persistence.volumeClaimName`  | PVC name                                         | infra-pvc
+`persistence.accessMode`       | Use volume as ReadOnly or ReadWrite              | `ReadWriteOnce`
+`persistence.size`             | Size of data volume                              | `8Gi`
 
 You can override these values at runtime using the `--set key=value[,key=value]` argument to `helm install`. For example,
 

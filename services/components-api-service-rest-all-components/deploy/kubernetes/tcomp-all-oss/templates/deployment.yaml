@@ -13,8 +13,10 @@ spec:
         app: {{ template "tcomp-oss-all.name" . }}
         release: {{ .Release.Name }}
     spec:
+      {{- if ne (include "tcomp-oss-all.imageRegistry" .) "" }}
       imagePullSecrets:
         - name: {{ template "tcomp-oss-all.registryKey" . }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ template "tcomp-oss-all.image" . }}
@@ -37,10 +39,22 @@ spec:
               port: {{ template "tcomp-oss-all.servicePortName" . }}
             initialDelaySeconds: 20
             timeoutSeconds: 5
+          volumeMounts:
+            - name: spark-config
+              mountPath: /spark-cluster-config
           {{- if $envValues.resources }}
           resources:
             {{ toYaml $envValues.resources | indent 12 }}
           {{- end }}
+      volumes:
+        - name: spark-config
+        {{- $persistanceEnabled := default .Values.persistence $envValues.persistence | pluck "enabled" | first | default .Values.persistence.enabled }}
+        {{- if $persistanceEnabled }}
+          persistentVolumeClaim:
+            claimName: {{ default .Values.persistence $envValues.persistence | pluck "volumeClaimName" | first | default .Values.persistence.volumeClaimName }}
+        {{- else }}
+          emptyDir: {}
+        {{- end -}}
       {{- if $envValues.nodeAffinity }}
       affinity:
         nodeAffinity:

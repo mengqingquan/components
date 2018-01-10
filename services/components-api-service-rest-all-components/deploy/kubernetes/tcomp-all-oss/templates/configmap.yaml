@@ -1,9 +1,13 @@
+{{- $envValues := pluck .Values.global.env .Values | first | default .Values }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ template "tcomp-oss-all.fullname" . }}
 data:
+  JAVA_OPTS: {{ default .Values.javaOpts $envValues.javaOpts | quote }}
   KAFKA_ON: {{ .Values.global.kafkaLogOn | default "false" | quote }}
   KAFKA_SSL_ON: {{ .Values.global.kafkaLogSslOn | default "false" | quote }}
   KAFKA_HOSTS: {{ .Values.global.kafkaLogHosts | default "kafka:9082" | quote }}
   KAFKA_TOPIC: {{ .Values.global.kafkaLogTopic | default "tpsvclogs" | quote }}
+  HADOOP_CONF_DIR: file:/spark-cluster-config
+  KRB5_CONFIG: /etc/krb5.conf -Xmx1512M
