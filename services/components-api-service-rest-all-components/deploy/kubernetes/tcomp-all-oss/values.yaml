@@ -82,4 +82,7 @@ dev:
   image:
     ## pullPolicy defines the pull policy for docker images: IfNotPresent and Always
     pullPolicy: "Always"
+  service:
+    type: "NodePort"
+    
 ## ------------------------------------------------------------------------------------------------------ ##
