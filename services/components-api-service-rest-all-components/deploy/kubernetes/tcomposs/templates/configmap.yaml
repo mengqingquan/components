@@ -1,10 +1,9 @@
-{{- $envValues := pluck .Values.global.env .Values | first | default .Values }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ template "tcomp-oss-all.fullname" . }}
+  name: {{ include "tcomposs.fullname" . }}
 data:
-  JAVA_OPTS: {{ default .Values.javaOpts $envValues.javaOpts | quote }}
+  JAVA_OPTS: {{ .Values.javaOpts | quote }}
   KAFKA_ON: {{ .Values.global.kafkaLogOn | default "false" | quote }}
   KAFKA_SSL_ON: {{ .Values.global.kafkaLogSslOn | default "false" | quote }}
   KAFKA_HOSTS: {{ .Values.global.kafkaLogHosts | default "kafka:9082" | quote }}

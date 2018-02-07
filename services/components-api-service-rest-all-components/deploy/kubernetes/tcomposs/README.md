@@ -1,4 +1,4 @@
-# tcomp-oss-all
+# tcomposs
 
 <provide short description of service here>
 
@@ -16,17 +16,17 @@ $ helm install <chart_folder_location>
 - <other dependencies or prerequisites>
 
 ### Installing the chart
-To install the chart with the release name tcomp-oss-all you need to 
+To install the chart with the release name tcomposs you need to 
 
-```$ helm install --name tcomp-oss-all <proj_root_folder>/deploy/kubernetes/tcomp-oss-all```
+```$ helm install --name tcomposs <proj_root_folder>/deploy/kubernetes/tcomposs```
 
-The command deploys the tcomp-oss-all Service on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+The command deploys the tcomposs Service on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
 ### Uninstalling the chart
 
-To uninstall/delete the tcomp-oss-all deployment:
+To uninstall/delete the tcomposs deployment:
 
-```$ helm delete --purge tcomp-oss-all```
+```$ helm delete --purge tcomposs```
 
 This command removes all the Kubernetes components associated with the chart and deletes the release.
 
@@ -57,17 +57,17 @@ Parameter                      | Description	                                   
 You can override these values at runtime using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```bash
-$ helm install --name tcomp-oss-all \
+$ helm install --name tcomposs \
   --set <parameter1>=<value1>,<parameter2>=<value2> \
-    <proj_root_folder>/deploy/kubernetes/tcomp-oss-all
+    <proj_root_folder>/deploy/kubernetes/tcomposs
 ```
 
-The above command deploys the tcomp-oss-all Service in the k8s cluster and sets the values of ...
+The above command deploys the tcomposs Service in the k8s cluster and sets the values of ...
 
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```bash
-$ helm install --name <release_name> -f <path>/values.yaml <proj_root_folder>/deploy/kubernetes/tcomp-oss-all
+$ helm install --name <release_name> -f <path>/values.yaml <proj_root_folder>/deploy/kubernetes/tcomposs
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)

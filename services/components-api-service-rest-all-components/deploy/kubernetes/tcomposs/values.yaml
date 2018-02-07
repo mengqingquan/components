@@ -22,6 +22,7 @@ global:
   # platformReleaseName: infra
 
   # kafkaLogOn: true
+  # kafkaLogSslOn: true  
   # kafkaLogHosts: "10.42.20.193:9092"
   # kafkaLogTopic: "tpsvclog"
 
@@ -41,6 +42,8 @@ image:
   pullPolicy: "IfNotPresent"
 
 service:
+  ## name of the service
+  name: "tcomposs"
   ## type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName
   ## default value is ClusterIP
   type: "ClusterIP"
@@ -71,18 +74,3 @@ persistence:
   ## accessMode can be: ReadWriteOnce, ReadOnlyMany, ReadWriteMany 
   accessMode: ReadWriteOnce
   size: 8Gi
-
-## ------------------------------------------------------------------------------------------------------ ##
-## defines values for the production environment
-prod:
-
-
-dev:
-
-  image:
-    ## pullPolicy defines the pull policy for docker images: IfNotPresent and Always
-    pullPolicy: "Always"
-  service:
-    type: "NodePort"
-    
-## ------------------------------------------------------------------------------------------------------ ##
