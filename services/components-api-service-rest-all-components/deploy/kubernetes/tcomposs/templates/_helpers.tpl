@@ -45,9 +45,9 @@ Define the docker image.
 */}}
 {{- define "tcomposs.image" -}}
 {{- if eq (default "" .Values.image.registry) "" -}}
-    {{- .Values.image.path -}}
+    {{- printf "%s:%s" .Values.image.path (default .Values.global.tcompVersion .Values.image.tag | default "latest" ) -}}
 {{else}}
-    {{- printf "%s/%s" .Values.image.registry .Values.image.path -}}
+    {{- printf "%s/%s:%s" .Values.image.registry .Values.image.path (default .Values.global.tcompVersion .Values.image.tag | default "latest" ) -}}
 {{- end -}}
 {{- end -}}
 

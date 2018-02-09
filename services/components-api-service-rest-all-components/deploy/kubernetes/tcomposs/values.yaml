@@ -21,6 +21,10 @@ global:
   ## only set this value if the Platform chart is not in the same release with the current chart
   # platformReleaseName: infra
 
+  ## tcompVersion defines the version/tag of the docker image
+  ## this value is used if image.tag is empty or nil
+  tcompVersion: "0.21.0-SNAPSHOT-7994efc4"
+
   # kafkaLogOn: true
   # kafkaLogSslOn: true  
   # kafkaLogHosts: "10.42.20.193:9092"
@@ -36,7 +40,9 @@ image:
   ## The docker image registry
   registry: "registry.datapwn.com"
   ## the dcoker image path in the registry
-  path: "talend/tcomp-components-api-service-rest-all-components-master:0.21.0-SNAPSHOT-7994efc4"
+  path: "talend/tcomp-components-api-service-rest-all-components-master"
+  ## tag defines the version/tag of the docker image 
+  #tag: "latest"
   ## pullPolicy defines the pull policy for docker images: IfNotPresent and Always
   ## default value is IfNotPresent
   pullPolicy: "IfNotPresent"
