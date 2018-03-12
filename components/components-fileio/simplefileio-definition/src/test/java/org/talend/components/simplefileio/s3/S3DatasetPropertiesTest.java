@@ -82,8 +82,6 @@ public class S3DatasetPropertiesTest {
             assertThat(w, notNullValue());
         }
 
-        assertThat(properties.region.isRequired(), is(true));
-        assertThat(properties.unknownRegion.isRequired(), is(true));
         assertThat(properties.bucket.isRequired(), is(true));
         assertThat(properties.object.isRequired(), is(true));
         assertThat(main.getWidget("bucket").getWidgetType(), is(Widget.DATALIST_WIDGET_TYPE));

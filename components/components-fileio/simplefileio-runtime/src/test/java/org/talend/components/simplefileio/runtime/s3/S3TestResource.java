@@ -27,7 +27,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.talend.components.simplefileio.s3.S3DatasetProperties;
 import org.talend.components.simplefileio.s3.S3DatastoreProperties;
-import org.talend.components.simplefileio.s3.S3Region;
 
 import com.talend.shaded.com.amazonaws.services.s3.model.ObjectMetadata;
 import com.talend.shaded.org.apache.hadoop.fs.s3a.S3AFileSystem;
@@ -112,7 +111,6 @@ public class S3TestResource extends ExternalResource {
     public S3DatasetProperties createS3DatasetProperties(boolean sseKms, boolean cseKms) {
         S3DatasetProperties properties = new S3DatasetProperties(null);
         properties.init();
-        properties.region.setValue(S3Region.valueOf(System.getProperty("s3.region")));
         properties.bucket.setValue(bucketName);
         properties.object.setValue(getPath());
         properties.setDatastoreProperties(createS3DatastoreProperties());

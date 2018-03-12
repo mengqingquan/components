@@ -13,24 +13,16 @@
 
 package org.talend.components.simplefileio.s3;
 
-import java.util.ArrayList;
-
-import org.talend.components.api.exception.error.ComponentsErrorCode;
 import org.talend.components.common.dataset.DatasetProperties;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.FieldDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.RecordDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIOFormat;
-import org.talend.components.simplefileio.s3.runtime.IS3DatasetRuntime;
-import org.talend.daikon.exception.TalendRuntimeException;
 import org.talend.daikon.properties.PropertiesImpl;
 import org.talend.daikon.properties.ReferenceProperties;
 import org.talend.daikon.properties.presentation.Form;
 import org.talend.daikon.properties.presentation.Widget;
 import org.talend.daikon.properties.property.Property;
 import org.talend.daikon.properties.property.PropertyFactory;
-import org.talend.daikon.runtime.RuntimeInfo;
-import org.talend.daikon.runtime.RuntimeUtil;
-import org.talend.daikon.sandbox.SandboxedInstance;
 
 public class S3DatasetProperties extends PropertiesImpl implements DatasetProperties<S3DatastoreProperties> {
 
@@ -38,10 +30,6 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             S3DatastoreDefinition.NAME);
 
     // S3 Connectivity
-    public Property<S3Region> region = PropertyFactory.newEnum("region", S3Region.class).setValue(S3Region.DEFAULT).setRequired();
-
-    public Property<String> unknownRegion = PropertyFactory.newString("unknownRegion", "us-east-1").setRequired();
-
     public Property<String> bucket = PropertyFactory.newString("bucket").setRequired();
 
     public Property<String> object = PropertyFactory.newString("object").setRequired();
@@ -95,8 +83,6 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         super.setupLayout();
         Form mainForm = new Form(this, Form.MAIN);
         // S3
-        mainForm.addRow(region);
-        mainForm.addRow(unknownRegion);
         mainForm.addRow(Widget.widget(bucket).setWidgetType(Widget.DATALIST_WIDGET_TYPE));
         mainForm.addRow(object);
         if (ACTIVATE_DATA_IN_MOTION) {
@@ -120,9 +106,6 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         // Main properties
         if (form.getName().equals(Form.MAIN)) {
             // S3
-            form.getWidget(region.getName()).setVisible();
-            form.getWidget(unknownRegion.getName()).setVisible(S3Region.OTHER.equals(region.getValue()));
-
             form.getWidget(bucket.getName()).setVisible();
             form.getWidget(object.getName()).setVisible();
             if (ACTIVATE_DATA_IN_MOTION) {
@@ -146,23 +129,6 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             form.getWidget(specificFieldDelimiter)
                     .setVisible(isCSV && fieldDelimiter.getValue().equals(FieldDelimiterType.OTHER));
         }
-    }
-
-    public void afterRegion() {
-        refreshLayout(getForm(Form.MAIN));
-        S3DatasetDefinition definition = new S3DatasetDefinition();
-        RuntimeInfo runtimeInfo = definition.getRuntimeInfo(this);
-        try (SandboxedInstance sandboxedInstance = RuntimeUtil.createRuntimeClass(runtimeInfo, getClass().getClassLoader())) {
-            IS3DatasetRuntime runtime = (IS3DatasetRuntime) sandboxedInstance.getInstance();
-            runtime.initialize(null, this);
-            this.bucket.setPossibleValues(new ArrayList<String>(runtime.listBuckets()));
-        } catch (Exception e) {
-            TalendRuntimeException.build(ComponentsErrorCode.IO_EXCEPTION, e).throwIt();
-        }
-    }
-
-    public void afterUnknownRegion() {
-        afterRegion();
     }
 
     public void afterEncryptDataInMotion() {
