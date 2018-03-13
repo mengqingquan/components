@@ -50,7 +50,7 @@ public class S3Connection {
             conn = new AmazonS3Client(basicCredentialsProvider);
         }
 
-        //seems the region is only useful for creating bucket, not necessary for our usage, so remove it, TODO make sure it
+        //seems the region is only useful for creating bucket, not necessary for our usage, so remove it
         //region.setRegion(region);
         return conn;
     }

@@ -40,7 +40,6 @@ import com.talend.shaded.org.apache.hadoop.fs.s3a.S3AFileSystem;
  *   <properties>
  *     <s3.accesskey>ACCESS_KEY</s3.accesskey>
  *     <s3.secretkey>SECRETY_KEY</s3.secretkey>
- *     <s3.region>EU_WEST_1</s3.region>
  *     <s3.bucket>testbucket</s3.bucket>
  *     <s3.ssekmskey>KEY1</s3.ssekmskey>
  *     <s3.csekmskey>KEY2</s3.csekmskey>
@@ -93,7 +92,7 @@ public class S3TestResource extends ExternalResource {
     }
 
     /**
-     * @return An S3DatasetProperties with credentials in the datastore, not configured for encryption. The region are
+     * @return An S3DatasetProperties with credentials in the datastore, not configured for encryption. The 
      * bucket are taken from the environment, and a unique "object" property is created for this unit test.
      */
     public S3DatasetProperties createS3DatasetProperties() {
@@ -105,8 +104,8 @@ public class S3TestResource extends ExternalResource {
      * 
      * @param sseKms Whether server-side encryption is used. The KMS key is taken from the system environment.
      * @param sseKms Whether client-side encryption is used. The KMS key is taken from the system environment.
-     * @return An S3DatasetProperties with credentials in the datastore, configured for the specified encryption. The
-     * region are bucket are taken from the environment, and a unique "object" property is created for this unit test.
+     * @return An S3DatasetProperties with credentials in the datastore, configured for the specified encryption. The 
+     * bucket are taken from the environment, and a unique "object" property is created for this unit test.
      */
     public S3DatasetProperties createS3DatasetProperties(boolean sseKms, boolean cseKms) {
         S3DatasetProperties properties = new S3DatasetProperties(null);
