@@ -13,16 +13,24 @@
 
 package org.talend.components.simplefileio.s3;
 
+import java.util.ArrayList;
+
+import org.talend.components.api.exception.error.ComponentsErrorCode;
 import org.talend.components.common.dataset.DatasetProperties;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.FieldDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.RecordDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIOFormat;
+import org.talend.components.simplefileio.s3.runtime.IS3DatasetRuntime;
+import org.talend.daikon.exception.TalendRuntimeException;
 import org.talend.daikon.properties.PropertiesImpl;
 import org.talend.daikon.properties.ReferenceProperties;
 import org.talend.daikon.properties.presentation.Form;
 import org.talend.daikon.properties.presentation.Widget;
 import org.talend.daikon.properties.property.Property;
 import org.talend.daikon.properties.property.PropertyFactory;
+import org.talend.daikon.runtime.RuntimeInfo;
+import org.talend.daikon.runtime.RuntimeUtil;
+import org.talend.daikon.sandbox.SandboxedInstance;
 
 public class S3DatasetProperties extends PropertiesImpl implements DatasetProperties<S3DatastoreProperties> {
 
@@ -128,6 +136,18 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             form.getWidget(fieldDelimiter).setVisible(isCSV);
             form.getWidget(specificFieldDelimiter)
                     .setVisible(isCSV && fieldDelimiter.getValue().equals(FieldDelimiterType.OTHER));
+        }
+    }
+    
+    public void afterDatastoreRef() {
+        S3DatasetDefinition definition = new S3DatasetDefinition();
+        RuntimeInfo runtimeInfo = definition.getRuntimeInfo(this);
+        try (SandboxedInstance sandboxedInstance = RuntimeUtil.createRuntimeClass(runtimeInfo, getClass().getClassLoader())) {
+            IS3DatasetRuntime runtime = (IS3DatasetRuntime) sandboxedInstance.getInstance();
+            runtime.initialize(null, this);
+            this.bucket.setPossibleValues(new ArrayList<String>(runtime.listBuckets()));
+        } catch (Exception e) {
+            TalendRuntimeException.build(ComponentsErrorCode.IO_EXCEPTION, e).throwIt();
         }
     }
 
