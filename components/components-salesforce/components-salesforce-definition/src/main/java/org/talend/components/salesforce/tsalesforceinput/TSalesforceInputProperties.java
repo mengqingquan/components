@@ -79,6 +79,10 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
 
     public static final int DEFAULT_CHUNK_SLEEP_TIME = 15;
 
+    public static final int DEFAULT_JOB_TIME_OUT = 600; // Default to 10 minutes, since at this time the job is placed in a queue for later processing
+
+    public Property<Integer> jobTimeOut = newInteger("jobTimeOut");
+
     public Property<Boolean> pkChunking = newBoolean("pkChunking", false);
 
     public Property<Integer> chunkSize = newInteger("chunkSize", DEFAULT_CHUNK_SIZE);
@@ -92,6 +96,7 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
     @Override
     public void setupProperties() {
         super.setupProperties();
+        jobTimeOut.setValue(DEFAULT_JOB_TIME_OUT);
         batchSize.setValue(250);
         queryMode.setValue(QueryMode.Query);
         normalizeDelimiter.setValue(";");
@@ -115,6 +120,7 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
         mainForm.addRow(includeDeleted);
 
         Form advancedForm = getForm(Form.ADVANCED);
+        advancedForm.addRow(jobTimeOut);
         advancedForm.addRow(pkChunking);
         advancedForm.addRow(chunkSize);
         advancedForm.addRow(chunkSleepTime);
@@ -191,6 +197,8 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
         refreshLayout(getForm(Form.MAIN));
         refreshLayout(getForm(Form.ADVANCED));
     }
+
+    public void afterJobTimeOut() { refreshLayout(getForm(Form.ADVANCED)); }
 
     public void afterManualQuery() {
         refreshLayout(getForm(Form.MAIN));

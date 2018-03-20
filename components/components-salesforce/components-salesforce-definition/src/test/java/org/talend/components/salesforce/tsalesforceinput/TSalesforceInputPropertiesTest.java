@@ -56,6 +56,7 @@ public class TSalesforceInputPropertiesTest extends SalesforceTestBase {
     @Test
     public void testSetupProperties() {
         // Check if properties were not set before
+        Assert.assertNull(properties.jobTimeOut.getValue());
         Assert.assertNull(properties.batchSize.getValue());
         Assert.assertNotEquals(QueryMode.Query, properties.queryMode.getValue());
         Assert.assertNull(properties.normalizeDelimiter.getValue());
@@ -65,6 +66,7 @@ public class TSalesforceInputPropertiesTest extends SalesforceTestBase {
         properties.setupProperties();
 
         // Check if properties were set correctly.
+        Assert.assertNotNull(properties.jobTimeOut.getValue());
         Assert.assertNotNull(properties.batchSize.getValue());
         Assert.assertEquals(QueryMode.Query, properties.queryMode.getValue());
         Assert.assertNotNull(properties.normalizeDelimiter.getValue());
@@ -105,6 +107,7 @@ public class TSalesforceInputPropertiesTest extends SalesforceTestBase {
         Assert.assertFalse(properties.getForm(Form.MAIN).getWidget(properties.guessQuery.getName()).isHidden());
 
         properties.refreshLayout(properties.getForm(Form.ADVANCED));
+        Assert.assertFalse(properties.getForm(Form.ADVANCED).getWidget(properties.jobTimeOut.getName()).isHidden());
         Assert.assertFalse(properties.getForm(Form.ADVANCED).getWidget(properties.normalizeDelimiter.getName()).isHidden());
         Assert.assertFalse(properties.getForm(Form.ADVANCED).getWidget(properties.columnNameDelimiter.getName()).isHidden());
         Assert.assertFalse(properties.getForm(Form.ADVANCED).getWidget(properties.batchSize.getName()).isHidden());
@@ -124,6 +127,7 @@ public class TSalesforceInputPropertiesTest extends SalesforceTestBase {
 
         properties.pkChunking.setValue(true);
         properties.refreshLayout(properties.getForm(Form.ADVANCED));
+        Assert.assertFalse(properties.getForm(Form.ADVANCED).getWidget(properties.jobTimeOut.getName()).isHidden());
         Assert.assertTrue(properties.getForm(Form.ADVANCED).getWidget(properties.normalizeDelimiter.getName()).isHidden());
         Assert.assertTrue(properties.getForm(Form.ADVANCED).getWidget(properties.columnNameDelimiter.getName()).isHidden());
         Assert.assertTrue(properties.getForm(Form.ADVANCED).getWidget(properties.batchSize.getName()).isHidden());
