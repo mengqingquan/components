@@ -111,6 +111,8 @@ public class SalesforceBulkRuntime {
 
     private int chunkSleepTime;
 
+    private long jobTimeOut;
+
     private static final String PK_CHUNKING_HEADER_NAME = "Sforce-Enable-PKChunking";
 
     private static final String CHUNK_SIZE_PROPERTY_NAME = "chunkSize=";
@@ -153,6 +155,15 @@ public class SalesforceBulkRuntime {
 
     public void setSafetySwitch(boolean safetySwitch) {
         this.safetySwitch = safetySwitch;
+    }
+
+    /**
+     * Set the global timeout of the job.
+     *
+     * @param properties - Salesforce input properties.
+     */
+    public void setJobTimeout(TSalesforceInputProperties properties) {
+        this.jobTimeOut = properties.jobTimeOut.getValue() * 1000; // from seconds to milliseconds
     }
 
     private void setBulkOperation(String sObjectType, OutputAction userOperation, String externalIdFieldName,
@@ -525,15 +536,18 @@ public class SalesforceBulkRuntime {
             }
             tryCount++;
             if (tryCount % 3 == 0) {// after 3 attempt to get the result we multiply the time to wait by 2
-                secToWait = secToWait * 2;
+                secToWait = (secToWait > 120) ? secToWait : secToWait * 2; // don't increase exponentially, no need to sleep more than 128 seconds
             }
-            // There is also a 2-minute limit on the time to process the query.
-            // If the query takes more than 2 minutes to process, a QUERY_TIMEOUT error is returned.
+
+            // The user can specify a global timeout for the job processing to suites some bulk limits :
             // https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/asynch_api_concepts_limits.htm
-            int processingTime = (int) ((System.currentTimeMillis() - job.getCreatedDate().getTimeInMillis()) / 1000);
-            if (processingTime > 120) {
-                throw new ComponentException(new DefaultErrorCode(HttpServletResponse.SC_REQUEST_TIMEOUT, "failedBatch"),
-                        ExceptionContext.build().put("failedBatch", info));
+            if(jobTimeOut > 0) { // if 0, timeout is disabled
+                long processingTime = System.currentTimeMillis() - job.getCreatedDate().getTimeInMillis();
+                if (processingTime > jobTimeOut) {
+                    throw new ComponentException(
+                            new DefaultErrorCode(HttpServletResponse.SC_REQUEST_TIMEOUT, "failedBatch"),
+                            ExceptionContext.build().put("failedBatch", info));
+                }
             }
         }
 
