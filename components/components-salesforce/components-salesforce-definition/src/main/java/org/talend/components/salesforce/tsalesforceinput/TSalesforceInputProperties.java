@@ -119,8 +119,8 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
     public boolean postDeserialize(int version, PostDeserializeSetup setup, boolean persistent) {
         boolean deserialized = super.postDeserialize(version, setup, persistent);
 
-        Integer jobtimeout = jobTimeOut.getValue();
-        if(jobTimeOut == null) {
+        Integer timeout = jobTimeOut.getValue();
+        if(timeout == null) {
             deserialized = true;
             jobTimeOut.setValue(DEFAULT_JOB_TIME_OUT);
         }
