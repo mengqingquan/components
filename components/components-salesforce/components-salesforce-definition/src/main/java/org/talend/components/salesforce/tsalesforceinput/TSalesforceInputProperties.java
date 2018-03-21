@@ -39,14 +39,17 @@ import org.talend.daikon.properties.property.Property;
 import org.talend.daikon.sandbox.SandboxedInstance;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.talend.daikon.serialize.PostDeserializeSetup;
+import org.talend.daikon.serialize.migration.SerializeSetVersion;
 
-public class TSalesforceInputProperties extends SalesforceConnectionModuleProperties {
+public class TSalesforceInputProperties extends SalesforceConnectionModuleProperties implements SerializeSetVersion {
+
+
 
     public enum QueryMode {
         Query,
-        Bulk
+        Bulk;
     }
-
     public Property<QueryMode> queryMode = newEnum("queryMode", QueryMode.class);
 
     public Property<String> condition = newProperty("condition"); //$NON-NLS-1$
@@ -64,17 +67,17 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
     public Property<Boolean> includeDeleted = newBoolean("includeDeleted"); //$NON-NLS-1$
 
     //
-    // Advanced
-    //
-    public Property<Integer> batchSize = newInteger("batchSize"); //$NON-NLS-1$
 
+    // Advanced
+    public Property<Integer> batchSize = newInteger("batchSize"); //$NON-NLS-1$
+    //
     public Property<String> normalizeDelimiter = newProperty("normalizeDelimiter"); //$NON-NLS-1$
 
     public Property<String> columnNameDelimiter = newProperty("columnNameDelimiter"); //$NON-NLS-1$
 
     // chunk size must be less than 250000.
-    public static final int MAX_CHUNK_SIZE = 250_000;
 
+    public static final int MAX_CHUNK_SIZE = 250_000;
     public static final int DEFAULT_CHUNK_SIZE = 100_000;
 
     public static final int DEFAULT_CHUNK_SLEEP_TIME = 15;
@@ -105,6 +108,23 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
         columnNameDelimiter.setValue("_");
         query.setTaggedValue(ComponentConstants.LINE_SEPARATOR_REPLACED_TO, " ");
         query.setValue(DEFAULT_QUERY);
+    }
+
+    @Override
+    public int getVersionNumber() {
+        return 1;
+    }
+
+    @Override
+    public boolean postDeserialize(int version, PostDeserializeSetup setup, boolean persistent) {
+        boolean deserialized = super.postDeserialize(version, setup, persistent);
+
+        if(version < 1) {
+            deserialized = true;
+            jobTimeOut.setValue(DEFAULT_JOB_TIME_OUT);
+        }
+
+        return deserialized;
     }
 
     @Override
