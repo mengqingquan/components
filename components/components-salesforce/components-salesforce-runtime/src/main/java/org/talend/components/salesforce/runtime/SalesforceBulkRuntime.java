@@ -152,7 +152,11 @@ public class SalesforceBulkRuntime {
      * @param properties - Salesforce input properties.
      */
     public void setJobTimeout(TSalesforceInputProperties properties) {
-        this.jobTimeOut = properties.jobTimeOut.getValue() * 1000; // from seconds to milliseconds
+        Integer timeout = properties.jobTimeOut.getValue();
+        if(timeout == null){
+            timeout = TSalesforceInputProperties.DEFAULT_JOB_TIME_OUT;
+        }
+        this.jobTimeOut = timeout * 1000; // from seconds to milliseconds
     }
 
     private void setBulkOperation(String sObjectType, OutputAction userOperation, String externalIdFieldName,
