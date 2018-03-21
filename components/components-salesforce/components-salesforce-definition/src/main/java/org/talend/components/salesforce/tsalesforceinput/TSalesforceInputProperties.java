@@ -230,6 +230,7 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
         if (Form.ADVANCED.equals(form.getName())) {
             boolean isBulkQuery = queryMode.getValue().equals(QueryMode.Bulk);
             form.getWidget(safetySwitch.getName()).setVisible(isBulkQuery);
+            form.getWidget(jobTimeOut.getName()).setVisible(isBulkQuery);
             form.getWidget(pkChunking.getName()).setVisible(isBulkQuery);
             form.getWidget(chunkSize.getName()).setVisible(isBulkQuery && pkChunking.getValue());
             form.getWidget(chunkSleepTime.getName()).setVisible(isBulkQuery && pkChunking.getValue());
