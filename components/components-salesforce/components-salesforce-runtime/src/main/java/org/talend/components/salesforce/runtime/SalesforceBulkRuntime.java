@@ -528,8 +528,8 @@ public class SalesforceBulkRuntime {
                         ExceptionContext.build().put("failedBatch", info));
             }
             tryCount++;
-            if (tryCount % 3 == 0) {// after 3 attempt to get the result we multiply the time to wait by 2
-                secToWait = (secToWait > 120) ? secToWait : secToWait * 2; // don't increase exponentially, no need to sleep more than 128 seconds
+            if (tryCount % 3 == 0 && secToWait < 120) {// after 3 attempt to get the result we multiply the time to wait by 2
+                secToWait = secToWait * 2; // if secToWait < 120 : don't increase exponentially, no need to sleep more than 128 seconds
             }
 
             // The user can specify a global timeout for the job processing to suites some bulk limits :
