@@ -82,9 +82,9 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
 
     public static final int DEFAULT_CHUNK_SLEEP_TIME = 15;
 
-    public Property<Boolean> safetySwitch = newBoolean("safetySwitch", true);
+    public static final int DEFAULT_JOB_TIME_OUT = 0; // Default : no timeout to wait until the job fails or is in success
 
-    public static final int DEFAULT_JOB_TIME_OUT = 600; // Default to 10 minutes, since at this time the job is placed in a queue for later processing
+    public Property<Boolean> safetySwitch = newBoolean("safetySwitch", true);
 
     public Property<Integer> jobTimeOut = newInteger("jobTimeOut");
 
