@@ -219,8 +219,6 @@ public class TSalesforceInputProperties extends SalesforceConnectionModuleProper
         refreshLayout(getForm(Form.ADVANCED));
     }
 
-    public void afterJobTimeOut() { refreshLayout(getForm(Form.ADVANCED)); }
-
     public void afterManualQuery() {
         refreshLayout(getForm(Form.MAIN));
     }
