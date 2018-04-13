@@ -48,4 +48,27 @@ public class FixedDatasetRuntimeTest {
 
         assertThat(consumed, hasSize(2));
     }
+
+    @Test
+    public void testNexmarkSample() {
+        final FixedDatasetProperties props = createComponentProperties().getDatasetProperties();
+        props.format.setValue(FixedDatasetProperties.RecordFormat.PREDEFINED);
+        props.predefined.setValue(FixedDatasetProperties.PredefinedType.NEXMARK);
+
+        FixedDatasetRuntime runtime = new FixedDatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Get the two records.
+        final List<IndexedRecord> consumed = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                consumed.add(ir);
+            }
+        });
+
+        assertThat(consumed, hasSize(100));
+    }
+
 }

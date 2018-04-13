@@ -26,6 +26,7 @@ import org.apache.beam.sdk.values.PCollectionList;
 import org.talend.components.adapter.beam.io.rowgenerator.RowGeneratorIO;
 import org.talend.components.api.component.runtime.RuntimableRuntime;
 import org.talend.components.api.container.RuntimeContainer;
+import org.talend.components.localio.fixed.FixedDatasetProperties;
 import org.talend.components.localio.fixed.FixedInputProperties;
 import org.talend.daikon.properties.ValidationResult;
 
@@ -41,6 +42,10 @@ public class FixedInputRuntime extends PTransform<PBegin, PCollection<IndexedRec
 
     @Override
     public PCollection<IndexedRecord> expand(PBegin begin) {
+        // Short-circuit processing for the pre-defined datasets.
+        if (properties.getDatasetProperties().format.getValue() == FixedDatasetProperties.RecordFormat.PREDEFINED)
+            return PredefinedDatasets.getSourceCollection(begin, properties);
+
         FixedDatasetRuntime runtime = new FixedDatasetRuntime();
         runtime.initialize(null, properties.getDatasetProperties());
 

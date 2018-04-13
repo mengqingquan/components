@@ -19,7 +19,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
@@ -109,6 +108,8 @@ public class FixedDatasetRuntime implements DatasetRuntime<FixedDatasetPropertie
             } catch (Exception e) {
                 throw LocalIOErrorCode.createCannotParseSchema(e, properties.schema.getValue());
             }
+        case PREDEFINED:
+            return PredefinedDatasets.getPredefinedSchema(properties.predefined.getValue());
         }
         throw LocalIOErrorCode.createCannotParseSchema(null, properties.schema.getValue());
     }
@@ -180,6 +181,9 @@ public class FixedDatasetRuntime implements DatasetRuntime<FixedDatasetPropertie
                 }
             }
             break;
+        case PREDEFINED:
+            PredefinedDatasets.getSample(values, properties, limit);
+
         }
         return values;
     }

@@ -39,6 +39,9 @@ public class FixedInputProperties extends FixedConnectorsComponentProperties imp
 
     public transient PropertyPathConnector OUT_CONNECTOR = new PropertyPathConnector(Connector.MAIN_NAME, "outgoing");
 
+    /** Property used to specify that this component generates unbounded input. */
+    public Property<Boolean> isStreaming = PropertyFactory.newBoolean("isStreaming", false);
+
     public SchemaProperties outgoing = new SchemaProperties("outgoing");
 
     /**
@@ -69,6 +72,7 @@ public class FixedInputProperties extends FixedConnectorsComponentProperties imp
     public void setupLayout() {
         super.setupLayout();
         Form mainForm = new Form(this, Form.MAIN);
+        mainForm.addRow(isStreaming);
         mainForm.addRow(repeat);
         mainForm.addRow(overrideValuesAction);
         mainForm.addRow(widget(overrideValues).setWidgetType(Widget.CODE_WIDGET_TYPE)

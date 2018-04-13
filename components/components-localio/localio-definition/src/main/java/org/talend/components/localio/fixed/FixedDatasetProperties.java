@@ -44,6 +44,8 @@ public class FixedDatasetProperties extends PropertiesImpl implements DatasetPro
 
     public Property<RecordFormat> format = PropertyFactory.newEnum("format", RecordFormat.class).setRequired();
 
+    public Property<PredefinedType> predefined = PropertyFactory.newEnum("predefined", PredefinedType.class).setRequired();
+
     public Property<RecordDelimiterType> recordDelimiter = PropertyFactory.newEnum("recordDelimiter", RecordDelimiterType.class)
             .setValue(RecordDelimiterType.LF);
 
@@ -81,6 +83,7 @@ public class FixedDatasetProperties extends PropertiesImpl implements DatasetPro
     public void setupProperties() {
         super.setupProperties();
         format.setValue(RecordFormat.CSV);
+        predefined.setValue(PredefinedType.NEXMARK);
     }
 
     @Override
@@ -88,6 +91,7 @@ public class FixedDatasetProperties extends PropertiesImpl implements DatasetPro
         super.setupLayout();
         Form mainForm = new Form(this, Form.MAIN);
         mainForm.addRow(format);
+        mainForm.addRow(predefined);
         mainForm.addRow(recordDelimiter);
         mainForm.addRow(specificRecordDelimiter);
         mainForm.addRow(fieldDelimiter);
@@ -114,6 +118,9 @@ public class FixedDatasetProperties extends PropertiesImpl implements DatasetPro
 
             form.getWidget(csvSchema).setVisible(format.getValue() == RecordFormat.CSV);
             form.getWidget(schema).setVisible(format.getValue() == RecordFormat.AVRO);
+
+            form.getWidget(values).setVisible(format.getValue() != RecordFormat.PREDEFINED);
+            form.getWidget(predefined).setVisible(format.getValue() == RecordFormat.PREDEFINED);
         }
     }
 
@@ -151,7 +158,15 @@ public class FixedDatasetProperties extends PropertiesImpl implements DatasetPro
     public enum RecordFormat {
         CSV,
         JSON,
-        AVRO
+        AVRO,
+        PREDEFINED
+    }
+
+    /**
+     * Possible record formats.
+     */
+    public enum PredefinedType {
+        NEXMARK
     }
 
     public enum RecordDelimiterType {

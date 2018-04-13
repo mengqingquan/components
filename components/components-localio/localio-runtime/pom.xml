@@ -29,17 +29,20 @@
 			<artifactId>localio-definition</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.beam</groupId>
-			<artifactId>beam-runners-direct-java</artifactId>
-			<version>${beam.version}</version>
-		</dependency>
 
 		<!-- CSV format-->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-csv</artifactId>
 			<version>1.4</version>
+		</dependency>
+
+
+		<!-- NEXMark-->
+		<dependency>
+			<groupId>org.apache.beam</groupId>
+			<artifactId>beam-sdks-java-nexmark</artifactId>
+			<version>${beam.version}</version>
 		</dependency>
 
 		<!-- Tests -->

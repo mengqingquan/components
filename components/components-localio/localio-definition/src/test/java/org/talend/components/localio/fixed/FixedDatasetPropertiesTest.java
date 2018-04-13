@@ -126,12 +126,13 @@ public class FixedDatasetPropertiesTest {
         properties.setupLayout();
         Form main = properties.getForm(Form.MAIN);
         assertThat(main, notNullValue());
-        assertThat(main.getWidgets(), hasSize(8));
+        assertThat(main.getWidgets(), hasSize(9));
 
         // Turn on specific delimiters on and off
         properties.recordDelimiter.setValue(FixedDatasetProperties.RecordDelimiterType.OTHER);
         properties.refreshLayout(main);
         assertThat(main.getWidget(properties.format.getName()).isVisible(), is(true));
+        assertThat(main.getWidget(properties.predefined.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.recordDelimiter.getName()).isVisible(), is(true));
         assertThat(main.getWidget(properties.specificRecordDelimiter.getName()).isVisible(), is(true));
         assertThat(main.getWidget(properties.fieldDelimiter.getName()).isVisible(), is(true));
@@ -143,6 +144,7 @@ public class FixedDatasetPropertiesTest {
         properties.fieldDelimiter.setValue(FixedDatasetProperties.FieldDelimiterType.OTHER);
         properties.refreshLayout(main);
         assertThat(main.getWidget(properties.format.getName()).isVisible(), is(true));
+        assertThat(main.getWidget(properties.predefined.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.recordDelimiter.getName()).isVisible(), is(true));
         assertThat(main.getWidget(properties.specificRecordDelimiter.getName()).isVisible(), is(true));
         assertThat(main.getWidget(properties.fieldDelimiter.getName()).isVisible(), is(true));
@@ -155,6 +157,7 @@ public class FixedDatasetPropertiesTest {
         properties.fieldDelimiter.setValue(FixedDatasetProperties.FieldDelimiterType.COMMA);
         properties.refreshLayout(main);
         assertThat(main.getWidget(properties.format.getName()).isVisible(), is(true));
+        assertThat(main.getWidget(properties.predefined.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.recordDelimiter.getName()).isVisible(), is(true));
         assertThat(main.getWidget(properties.specificRecordDelimiter.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.fieldDelimiter.getName()).isVisible(), is(true));
@@ -167,6 +170,7 @@ public class FixedDatasetPropertiesTest {
         properties.format.setValue(FixedDatasetProperties.RecordFormat.AVRO);
         properties.refreshLayout(main);
         assertThat(main.getWidget(properties.format.getName()).isVisible(), is(true));
+        assertThat(main.getWidget(properties.predefined.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.recordDelimiter.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.specificRecordDelimiter.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.fieldDelimiter.getName()).isVisible(), is(false));
@@ -180,6 +184,7 @@ public class FixedDatasetPropertiesTest {
         properties.fieldDelimiter.setValue(FixedDatasetProperties.FieldDelimiterType.OTHER);
         properties.refreshLayout(main);
         assertThat(main.getWidget(properties.format.getName()).isVisible(), is(true));
+        assertThat(main.getWidget(properties.predefined.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.recordDelimiter.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.specificRecordDelimiter.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.fieldDelimiter.getName()).isVisible(), is(false));
@@ -187,6 +192,19 @@ public class FixedDatasetPropertiesTest {
         assertThat(main.getWidget(properties.schema.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.csvSchema.getName()).isVisible(), is(false));
         assertThat(main.getWidget(properties.values.getName()).isVisible(), is(true));
+
+        // Turn on PREDEFINED format
+        properties.format.setValue(FixedDatasetProperties.RecordFormat.PREDEFINED);
+        properties.refreshLayout(main);
+        assertThat(main.getWidget(properties.format.getName()).isVisible(), is(true));
+        assertThat(main.getWidget(properties.predefined.getName()).isVisible(), is(true));
+        assertThat(main.getWidget(properties.recordDelimiter.getName()).isVisible(), is(false));
+        assertThat(main.getWidget(properties.specificRecordDelimiter.getName()).isVisible(), is(false));
+        assertThat(main.getWidget(properties.fieldDelimiter.getName()).isVisible(), is(false));
+        assertThat(main.getWidget(properties.specificFieldDelimiter.getName()).isVisible(), is(false));
+        assertThat(main.getWidget(properties.schema.getName()).isVisible(), is(false));
+        assertThat(main.getWidget(properties.csvSchema.getName()).isVisible(), is(false));
+        assertThat(main.getWidget(properties.values.getName()).isVisible(), is(false));
     }
 
     @Test
