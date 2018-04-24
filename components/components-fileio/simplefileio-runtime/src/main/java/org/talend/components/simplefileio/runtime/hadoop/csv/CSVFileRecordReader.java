@@ -13,7 +13,7 @@ import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordReader;
 
-public abstract class TDelimitedFileRecordReader<K, V> implements RecordReader<K, V> {
+public abstract class CSVFileRecordReader<K, V> implements RecordReader<K, V> {
     public static final String MAX_LINE_LENGTH =
           "mapreduce.input.linerecordreader.line.maxlength";
     private CompressionCodecFactory compressionCodecs = null;
@@ -24,11 +24,11 @@ public abstract class TDelimitedFileRecordReader<K, V> implements RecordReader<K
 
     private long end;
 
-    private TDelimitedFileLineReader in;
+    private CSVFileLineReader in;
 
     int maxLineLength;
 
-    protected TDelimitedFileRecordReader(JobConf job, FileSplit split, byte[] rowSeparator) throws IOException {
+    protected CSVFileRecordReader(JobConf job, FileSplit split, byte[] rowSeparator) throws IOException {
         this.maxLineLength = job.getInt(MAX_LINE_LENGTH, Integer.MAX_VALUE);
         start = split.getStart();
         end = start + split.getLength();
@@ -41,18 +41,18 @@ public abstract class TDelimitedFileRecordReader<K, V> implements RecordReader<K
         if (codec != null) {
             InputStream inputStream = codec.createInputStream(fileIn);
             inputStream.skip(start);
-            in = new TDelimitedFileLineReader(inputStream, TDelimitedFileLineReader.DEFAULT_BUFFER_SIZE,
+            in = new CSVFileLineReader(inputStream, CSVFileLineReader.DEFAULT_BUFFER_SIZE,
                     rowSeparator, split.getLength());
             end = Long.MAX_VALUE;
         } else {
             fileIn.seek(start);
-            in = new TDelimitedFileLineReader(fileIn, TDelimitedFileLineReader.DEFAULT_BUFFER_SIZE, rowSeparator,
+            in = new CSVFileLineReader(fileIn, CSVFileLineReader.DEFAULT_BUFFER_SIZE, rowSeparator,
                     split.getLength());
         }
         // Support the header
         long skipline = 0;
-        if (split instanceof TFileSplit) {
-            skipline = ((TFileSplit)split).getSkipLineLength();
+        if (split instanceof CSVFileSplit) {
+            skipline = ((CSVFileSplit)split).getSkipLineLength();
         }
         if (start != skipline) {
             start += in.readLine(new Text(), 0, maxBytesToConsume(start));

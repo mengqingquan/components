@@ -5,7 +5,7 @@ import java.io.InputStream;
 
 import org.apache.hadoop.io.Text;
 
-public class TDelimitedFileLineReader {
+public class CSVFileLineReader {
 
     public static final int DEFAULT_BUFFER_SIZE = 64 * 1024;
 
@@ -35,7 +35,7 @@ public class TDelimitedFileLineReader {
     // The line delimiter
     private final byte[] recordDelimiterBytes;
 
-    public TDelimitedFileLineReader(InputStream in, int bufferSize, byte[] recordDelimiterBytes, long splitLength) {
+    public CSVFileLineReader(InputStream in, int bufferSize, byte[] recordDelimiterBytes, long splitLength) {
         this.in = in;
         this.bufferSize = bufferSize;
         this.buffer = new byte[this.bufferSize];

@@ -29,7 +29,7 @@ import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.net.NodeBase;
 
-public abstract class TDelimitedFileInputFormat<K, V> extends
+public abstract class CSVFileInputFormat<K, V> extends
     org.apache.hadoop.mapred.FileInputFormat<K, V> implements Configurable {
 
   static public String TALEND_SKIP_LINE_LENGTH = "talend.mapred.skip.line.length";
@@ -73,9 +73,9 @@ public abstract class TDelimitedFileInputFormat<K, V> extends
    * A factory that makes the split for this class. It can be overridden
    * by sub-classes to make sub-types
    */
-  protected TFileSplit makeSplit(Path file, long start, long length, long skipLineLength,
+  protected CSVFileSplit makeSplit(Path file, long start, long length, long skipLineLength,
       String[] hosts) {
-    return new TFileSplit(file, start, length, skipLineLength, hosts);
+    return new CSVFileSplit(file, start, length, skipLineLength, hosts);
   }
 
   public InputSplit[] getSplits(JobConf job, int numSplits)
@@ -97,7 +97,7 @@ public abstract class TDelimitedFileInputFormat<K, V> extends
     long minSize = Math.max(job.getLong("mapred.min.split.size", 1), 1);
 
     // generate splits
-    ArrayList<TFileSplit> splits = new ArrayList<TFileSplit>(numSplits);
+    ArrayList<CSVFileSplit> splits = new ArrayList<CSVFileSplit>(numSplits);
     NetworkTopology clusterMap = new NetworkTopology();
     for (FileStatus file : files) {
       Path path = file.getPath();
@@ -134,18 +134,18 @@ public abstract class TDelimitedFileInputFormat<K, V> extends
         }
       } else {
         // Create empty hosts array for zero length files
-        splits.add(new TFileSplit(path, 0, length, 0, new String[0]));
+        splits.add(new CSVFileSplit(path, 0, length, 0, new String[0]));
       }
     }
     LOG.debug("Total # of splits: " + splits.size());
-    return splits.toArray(new TFileSplit[splits.size()]);
+    return splits.toArray(new CSVFileSplit[splits.size()]);
   }
 
   protected long caculateSkipLength(org.apache.hadoop.fs.FileStatus file,
       JobConf job) throws IOException {
-    TFileSplit split = new TFileSplit(file.getPath(), 0, file.getLen(), 0,
+    CSVFileSplit split = new CSVFileSplit(file.getPath(), 0, file.getLen(), 0,
         new String[0]);
-    TDelimitedFileRecordReader reader = (TDelimitedFileRecordReader) getRecordReader(
+    CSVFileRecordReader reader = (CSVFileRecordReader) getRecordReader(
         split, job, null);
     Text text = new Text();
     for (int i = 0; i < skipLines; i++) {

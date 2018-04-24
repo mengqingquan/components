@@ -11,15 +11,15 @@ import org.apache.hadoop.mapred.FileSplit;
  * Extends the jobSplit to add the Length variable
  *
  */
-public class TFileSplit extends FileSplit {
+public class CSVFileSplit extends FileSplit {
 
   private long skipLineLength = 0l;
 
-  public TFileSplit() {
+  public CSVFileSplit() {
     super(null, 0l, 0l, (String[])null);
   }
   
-  public TFileSplit(Path file, long start, long length, long skipLineLength, String[] hosts) {
+  public CSVFileSplit(Path file, long start, long length, long skipLineLength, String[] hosts) {
     super(file, start, length, hosts);
     this.skipLineLength = skipLineLength;
   }
