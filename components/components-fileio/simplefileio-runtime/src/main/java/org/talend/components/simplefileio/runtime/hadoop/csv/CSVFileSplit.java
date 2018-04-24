@@ -5,38 +5,38 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
-/**
- * Extends the jobSplit to add the Length variable
- *
- */
 public class CSVFileSplit extends FileSplit {
 
-  private long skipLineLength = 0l;
+  private long skipLength = 0l;
 
   public CSVFileSplit() {
-    super(null, 0l, 0l, (String[])null);
   }
-  
+
   public CSVFileSplit(Path file, long start, long length, long skipLineLength, String[] hosts) {
     super(file, start, length, hosts);
-    this.skipLineLength = skipLineLength;
+    this.skipLength = skipLineLength;
+  }
+
+  public CSVFileSplit(Path file, long start, long length, long skipLineLength, String[] hosts, String[] inMemoryHosts) {
+    super(file, start, length, hosts, inMemoryHosts);
+    this.skipLength = skipLineLength;
   }
 
   @Override
   public void write(DataOutput out) throws IOException {
     super.write(out);
-    out.writeLong(skipLineLength);
+    out.writeLong(skipLength);
   }
 
   @Override
   public void readFields(DataInput in) throws IOException {
     super.readFields(in);
-    skipLineLength = in.readLong();
+    skipLength = in.readLong();
   }
 
   public long getSkipLineLength() {
-    return skipLineLength;
+    return skipLength;
   }
 }

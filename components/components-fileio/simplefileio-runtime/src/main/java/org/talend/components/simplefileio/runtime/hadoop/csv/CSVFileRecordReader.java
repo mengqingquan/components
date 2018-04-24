@@ -1,136 +1,211 @@
 package org.talend.components.simplefileio.runtime.hadoop.csv;
 
 import java.io.IOException;
-import java.io.InputStream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.Seekable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
-import org.apache.hadoop.mapred.FileSplit;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.RecordReader;
+import org.apache.hadoop.io.compress.Decompressor;
+import org.apache.hadoop.io.compress.SplitCompressionInputStream;
+import org.apache.hadoop.io.compress.SplittableCompressionCodec;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.CompressedSplitLineReader;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.SplitLineReader;
 
-public abstract class CSVFileRecordReader<K, V> implements RecordReader<K, V> {
-    public static final String MAX_LINE_LENGTH =
-          "mapreduce.input.linerecordreader.line.maxlength";
-    private CompressionCodecFactory compressionCodecs = null;
+public class CSVFileRecordReader extends RecordReader<LongWritable, Text> {
+  private static final Log LOG = LogFactory.getLog(CSVFileRecordReader.class);
+  public static final String MAX_LINE_LENGTH = "mapreduce.input.linerecordreader.line.maxlength";
 
-    private long start;
+  private long start;
+  private long pos;
+  private long end;
+  private SplitLineReader in;
+  private FSDataInputStream fileIn;
+  private Seekable filePosition;
+  private int maxLineLength;
+  private LongWritable key;
+  private Text value;
+  private boolean isCompressedInput;
+  private Decompressor decompressor;
+  private byte[] recordDelimiterBytes;
 
-    private long pos;
+  public CSVFileRecordReader() {
+  }
 
-    private long end;
+  public CSVFileRecordReader(byte[] recordDelimiter) {
+    this.recordDelimiterBytes = recordDelimiter;
+  }
 
-    private CSVFileLineReader in;
+  public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException {
+    FileSplit split = (FileSplit) genericSplit;
+    Configuration job = context.getConfiguration();
+    this.maxLineLength = job.getInt(MAX_LINE_LENGTH, Integer.MAX_VALUE);
+    start = split.getStart();
+    end = start + split.getLength();
+    final Path file = split.getPath();
 
-    int maxLineLength;
+    // open the file and seek to the start of the split
+    final FileSystem fs = file.getFileSystem(job);
+    fileIn = fs.open(file);
 
-    protected CSVFileRecordReader(JobConf job, FileSplit split, byte[] rowSeparator) throws IOException {
-        this.maxLineLength = job.getInt(MAX_LINE_LENGTH, Integer.MAX_VALUE);
-        start = split.getStart();
-        end = start + split.getLength();
-        final Path file = split.getPath();
-        compressionCodecs = new CompressionCodecFactory(job);
-        final CompressionCodec codec = compressionCodecs.getCodec(file);
-
-        FileSystem fs = file.getFileSystem(job);
-        FSDataInputStream fileIn = fs.open(file);
-        if (codec != null) {
-            InputStream inputStream = codec.createInputStream(fileIn);
-            inputStream.skip(start);
-            in = new CSVFileLineReader(inputStream, CSVFileLineReader.DEFAULT_BUFFER_SIZE,
-                    rowSeparator, split.getLength());
-            end = Long.MAX_VALUE;
-        } else {
-            fileIn.seek(start);
-            in = new CSVFileLineReader(fileIn, CSVFileLineReader.DEFAULT_BUFFER_SIZE, rowSeparator,
-                    split.getLength());
-        }
-        // Support the header
-        long skipline = 0;
-        if (split instanceof CSVFileSplit) {
-            skipline = ((CSVFileSplit)split).getSkipLineLength();
-        }
-        if (start != skipline) {
-            start += in.readLine(new Text(), 0, maxBytesToConsume(start));
-        }
-        this.pos = start;
+    CompressionCodec codec = new CompressionCodecFactory(job).getCodec(file);
+    if (null != codec) {
+      isCompressedInput = true;
+      decompressor = CodecPool.getDecompressor(codec);
+      if (codec instanceof SplittableCompressionCodec) {
+        final SplitCompressionInputStream cIn = ((SplittableCompressionCodec) codec).createInputStream(fileIn, decompressor, start, end, SplittableCompressionCodec.READ_MODE.BYBLOCK);
+        in = new CompressedSplitLineReader(cIn, job, this.recordDelimiterBytes);
+        start = cIn.getAdjustedStart();
+        end = cIn.getAdjustedEnd();
+        filePosition = cIn;
+      } else {
+        in = new SplitLineReader(codec.createInputStream(fileIn, decompressor), job, this.recordDelimiterBytes);
+        filePosition = fileIn;
+      }
+    } else {
+      fileIn.seek(start);
+      in = new SplitLineReader(fileIn, job, this.recordDelimiterBytes);
+      filePosition = fileIn;
     }
+
+    // Support the header
+    long skipLength = 0;
+    if (split instanceof CSVFileSplit) {
+      skipLength = ((CSVFileSplit) split).getSkipLineLength();
+    }
+
+    // If this is not the first split, we always throw away first record
+    // because we always (except the last split) read one extra line in
+    // next() method.
+    if (start != skipLength) {
+      start += in.readLine(new Text(), 0, maxBytesToConsume(start));
+    }
+    this.pos = start;
+  }
 
   private int maxBytesToConsume(long pos) {
-        return (int) Math.max(Math.min(Integer.MAX_VALUE, end - pos), maxLineLength);
+    return isCompressedInput ? Integer.MAX_VALUE : (int) Math.max(Math.min(Integer.MAX_VALUE, end - pos), maxLineLength);
   }
 
-  private int skipUtfByteOrderMark(Text value) throws IOException {
-        // Strip BOM(Byte Order Mark)
-        // Text only support UTF-8, we only need to check UTF-8 BOM
-        // (0xEF,0xBB,0xBF) at the start of the text stream.
-        int newMaxLineLength = (int) Math.min(3L + (long) maxLineLength, Integer.MAX_VALUE);
-        int newSize = in.readLine(value, newMaxLineLength, maxBytesToConsume(pos));
-        // Even we read 3 extra bytes for the first line,
-        // we won't alter existing behavior (no backwards incompat issue).
-        // Because the newSize is less than maxLineLength and
-        // the number of bytes copied to Text is always no more than newSize.
-        // If the return size from readLine is not less than maxLineLength,
-        // we will discard the current line and read the next line.
+  private long getFilePosition() throws IOException {
+    long retVal;
+    if (isCompressedInput && null != filePosition) {
+      retVal = filePosition.getPos();
+    } else {
+      retVal = pos;
+    }
+    return retVal;
+  }
+
+  private int skipUtfByteOrderMark() throws IOException {
+    // Strip BOM(Byte Order Mark)
+    // Text only support UTF-8, we only need to check UTF-8 BOM
+    // (0xEF,0xBB,0xBF) at the start of the text stream.
+    int newMaxLineLength = (int) Math.min(3L + (long) maxLineLength, Integer.MAX_VALUE);
+    int newSize = in.readLine(value, newMaxLineLength, maxBytesToConsume(pos));
+    // Even we read 3 extra bytes for the first line,
+    // we won't alter existing behavior (no backwards incompat issue).
+    // Because the newSize is less than maxLineLength and
+    // the number of bytes copied to Text is always no more than newSize.
+    // If the return size from readLine is not less than maxLineLength,
+    // we will discard the current line and read the next line.
+    pos += newSize;
+    int textLength = value.getLength();
+    byte[] textBytes = value.getBytes();
+    if ((textLength >= 3) && (textBytes[0] == (byte) 0xEF) && (textBytes[1] == (byte) 0xBB) && (textBytes[2] == (byte) 0xBF)) {
+      // find UTF-8 BOM, strip it.
+      LOG.info("Found UTF-8 BOM and skipped it");
+      textLength -= 3;
+      newSize -= 3;
+      if (textLength > 0) {
+        // It may work to use the same buffer and not do the copyBytes
+        textBytes = value.copyBytes();
+        value.set(textBytes, 3, textLength);
+      } else {
+        value.clear();
+      }
+    }
+    return newSize;
+  }
+
+  public boolean nextKeyValue() throws IOException {
+    if (key == null) {
+      key = new LongWritable();
+    }
+    key.set(pos);
+    if (value == null) {
+      value = new Text();
+    }
+    int newSize = 0;
+    // We always read one extra line, which lies outside the upper
+    // split limit i.e. (end - 1)
+    while (getFilePosition() <= end || in.needAdditionalRecordAfterSplit()) {
+      if (pos == 0) {
+        newSize = skipUtfByteOrderMark();
+      } else {
+        newSize = in.readLine(value, maxLineLength, maxBytesToConsume(pos));
         pos += newSize;
-        int textLength = value.getLength();
-        byte[] textBytes = value.getBytes();
-        if ((textLength >= 3) && (textBytes[0] == (byte) 0xEF) && (textBytes[1] == (byte) 0xBB)
-                && (textBytes[2] == (byte) 0xBF)) {
-            // find UTF-8 BOM, strip it.
-            textLength -= 3;
-            newSize -= 3;
-            if (textLength > 0) {
-                // It may work to use the same buffer and not do the copyBytes
-                textBytes = new byte[value.getLength()];
-                System.arraycopy(value.getBytes(), 0, textBytes, 0, value.getLength());
-                value.set(textBytes, 3, textLength);
-            } else {
-                value.clear();
-            }
-        }
-        return newSize;
+      }
+
+      if ((newSize == 0) || (newSize < maxLineLength)) {
+        break;
+      }
+
+      // line too long. try again
+      LOG.info("Skipped line of size " + newSize + " at pos " + (pos - newSize));
+    }
+    if (newSize == 0) {
+      key = null;
+      value = null;
+      return false;
+    } else {
+      return true;
+    }
   }
 
-    public boolean next(Text value) throws IOException {
-        while (pos <= end || in.needAdditionalRecordAfterSplit()) {
-            int newSize = 0;
-            if (pos == 0) {
-                newSize = skipUtfByteOrderMark(value);
-            } else {
-                newSize = in.readLine(value, maxLineLength, maxBytesToConsume(pos));
-                pos += newSize;
-            }
-            if (newSize == 0) {
-                return false;
-            }
-            if (newSize < maxLineLength) {
-                return true;
-            }
-        }
-        return false;
-    }
+  @Override
+  public LongWritable getCurrentKey() {
+    return key;
+  }
 
-    public long getPos() throws IOException {
-        return pos;
-    }
+  @Override
+  public Text getCurrentValue() {
+    return value;
+  }
 
-    public void close() throws IOException {
-        if (in != null) {
-            in.close();
-        }
+  /**
+   * Get the progress within the split
+   */
+  public float getProgress() throws IOException {
+    if (start == end) {
+      return 0.0f;
+    } else {
+      return Math.min(1.0f, (getFilePosition() - start) / (float) (end - start));
     }
+  }
 
-    public float getProgress() throws IOException {
-        if (start == end) {
-            return 0.0f;
-        } else {
-            return Math.min(1.0f, (pos - start) / (float) (end - start));
-        }
+  public synchronized void close() throws IOException {
+    try {
+      if (in != null) {
+        in.close();
+      }
+    } finally {
+      if (decompressor != null) {
+        CodecPool.returnDecompressor(decompressor);
+        decompressor = null;
+      }
     }
+  }
 }
-
