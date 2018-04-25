@@ -38,6 +38,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -93,9 +94,9 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
 
             source.setLimit(limit);
 
-            PCollection<KV<org.apache.hadoop.io.LongWritable, Text>> pc1 = in.apply(Read.from(source));
+            PCollection<KV<org.apache.hadoop.io.LongWritable, BytesWritable>> pc1 = in.apply(Read.from(source));
 
-            pc2 = pc1.apply(Values.<Text> create());
+            pc2 = pc1.apply(Values.<BytesWritable> create());
         }
 
         PCollection<IndexedRecord> pc3 = pc2.apply(ParDo.of(new ExtractCsvRecord<>(fieldDelimiter.charAt(0))));

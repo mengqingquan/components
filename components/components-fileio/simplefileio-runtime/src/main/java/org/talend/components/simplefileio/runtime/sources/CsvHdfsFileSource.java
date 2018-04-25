@@ -14,11 +14,11 @@ package org.talend.components.simplefileio.runtime.sources;
 
 import java.io.IOException;
 
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.talend.components.simplefileio.runtime.ExtraHadoopConfiguration;
 import org.talend.components.simplefileio.runtime.SimpleFileIOAvroRegistry;
+import org.talend.components.simplefileio.runtime.hadoop.csv.CSVFileInputFormat;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
 
 /**
@@ -26,7 +26,7 @@ import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
  *
  * This implementation allows the recordDelimiter to be injected into the TextInputFormat.
  */
-public class CsvHdfsFileSource extends FileSourceBase<LongWritable, Text, CsvHdfsFileSource> {
+public class CsvHdfsFileSource extends FileSourceBase<LongWritable, BytesWritable, CsvHdfsFileSource> {
 
     static {
         // Ensure that the singleton for the SimpleFileIOAvroRegistry is created.
@@ -35,13 +35,13 @@ public class CsvHdfsFileSource extends FileSourceBase<LongWritable, Text, CsvHdf
 
     private CsvHdfsFileSource(UgiDoAs doAs, String filepattern, String recordDelimiter, ExtraHadoopConfiguration extraConfig,
             SerializableSplit serializableSplit) {
-        super(doAs, filepattern, TextInputFormat.class, LongWritable.class, Text.class, extraConfig, serializableSplit);
+        super(doAs, filepattern, CSVFileInputFormat.class, LongWritable.class, BytesWritable.class, extraConfig, serializableSplit);
         getExtraHadoopConfiguration().set("textinputformat.record.delimiter", recordDelimiter);
     }
 
     private CsvHdfsFileSource(UgiDoAs doAs, String filepattern, ExtraHadoopConfiguration extraConfig,
             SerializableSplit serializableSplit) {
-        super(doAs, filepattern, TextInputFormat.class, LongWritable.class, Text.class, extraConfig, serializableSplit);
+        super(doAs, filepattern, CSVFileInputFormat.class, LongWritable.class, BytesWritable.class, extraConfig, serializableSplit);
     }
 
     public static CsvHdfsFileSource of(UgiDoAs doAs, String filepattern, String recordDelimiter) {

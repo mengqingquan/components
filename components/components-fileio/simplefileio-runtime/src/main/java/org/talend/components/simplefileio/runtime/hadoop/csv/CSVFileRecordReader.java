@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.Seekable;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CodecPool;
@@ -24,7 +25,7 @@ import org.apache.hadoop.mapreduce.lib.input.CompressedSplitLineReader;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.SplitLineReader;
 
-public class CSVFileRecordReader extends RecordReader<LongWritable, Text> {
+public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritable> {
   private static final Log LOG = LogFactory.getLog(CSVFileRecordReader.class);
   public static final String MAX_LINE_LENGTH = "mapreduce.input.linerecordreader.line.maxlength";
 
@@ -208,8 +209,9 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, Text> {
   }
 
   @Override
-  public Text getCurrentValue() {
-    return value;
+  public BytesWritable getCurrentValue() {
+    //TODO reuse single one is better, seems not here, will check here
+    return new BytesWritable(value.getBytes());
   }
 
   /**

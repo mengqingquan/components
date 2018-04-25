@@ -12,8 +12,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.SplittableCompressionCodec;
@@ -31,7 +31,7 @@ import org.apache.hadoop.util.StopWatch;
  * @param <K>
  * @param <V>
  */
-public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<LongWritable, Text> {
+public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<LongWritable, BytesWritable> {
 
   // TODO remove them to the reader class to parse the single split
   public static String TALEND_ENCODING = "talend_encoding";
