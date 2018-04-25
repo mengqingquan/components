@@ -17,6 +17,7 @@ import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.NullableCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.transforms.Combine;
+import org.apache.beam.sdk.values.KV;
 import org.talend.components.adapter.beam.kv.KeyValueUtils;
 import org.talend.components.adapter.beam.kv.SchemaGeneratorUtils;
 import org.talend.components.processing.definition.aggregate.AggregateFieldOperationType;
@@ -27,7 +28,7 @@ import org.talend.daikon.exception.TalendRuntimeException;
 import org.talend.daikon.exception.error.CommonErrorCodes;
 
 public class AggregateCombineFn
-        extends Combine.CombineFn<IndexedRecord, AggregateCombineFn.AggregateAccumulator, IndexedRecord> {
+        extends Combine.CombineFn<IndexedRecord, AggregateCombineFn.AggregateAccumulator, KV<Boolean, IndexedRecord>> {
 
     private AggregateProperties properties;
 
@@ -61,7 +62,9 @@ public class AggregateCombineFn
                 if (deltaAcc.outputRecordSchemaStr == null) {
                     deltaAcc.outputRecordSchemaStr = accumulator.outputRecordSchemaStr;
                 }
-                accs.add(accumulator.accumulatorElements.get(idx));
+                if (accumulator.outputRecordSchemaStr != null) {
+                    accs.add(accumulator.accumulatorElements.get(idx));
+                }
             }
             deltaAcc.accumulatorElements.get(idx).mergeAccumulators(accs);
         }
@@ -69,7 +72,9 @@ public class AggregateCombineFn
     }
 
     @Override
-    public IndexedRecord extractOutput(AggregateAccumulator accumulator) {
+    public KV<Boolean, IndexedRecord> extractOutput(AggregateAccumulator accumulator) {
+        if (accumulator.outputRecordSchemaStr == null)
+            return KV.of(false, null);
         Schema.Parser parser = new Schema.Parser();
         Schema outputRecordSchema = parser.parse(accumulator.outputRecordSchemaStr);
         IndexedRecord outputRecord = new GenericData.Record(outputRecordSchema);
@@ -79,7 +84,7 @@ public class AggregateCombineFn
                 outputRecord = KeyValueUtils.mergeIndexedRecord(outputFieldRecord, outputRecord, outputRecordSchema);
             }
         }
-        return outputRecord;
+        return KV.of(true, outputRecord);
     }
 
     // Implements Serializable to make sure use SerializableCoder
@@ -348,7 +353,7 @@ public class AggregateCombineFn
 
         @Override
         public void createAccumulator() {
-            accs = 0l;
+            accs = 0L;
         }
 
         @Override
