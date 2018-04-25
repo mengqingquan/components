@@ -86,20 +86,47 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, Text> {
       skipLength = ((CSVFileSplit) split).getSkipLineLength();
     }
 
+    boolean isFirstSplit = true;
+    if (isCompressedInput) {
+      // TODO check if right
+      isFirstSplit = start != skipLength;
+    } else {
+      isFirstSplit = start != skipLength;
+    }
+
     // If this is not the first split, we always throw away first record
     // because we always (except the last split) read one extra line in
     // next() method.
-    if (start != skipLength) {
+    if (isFirstSplit) {
       start += in.readLine(new Text(), 0, maxBytesToConsume(start));
     }
     this.pos = start;
+  }
+
+  // call by input format to skip the fixed number header line and get the
+  // new start location
+  public void skipHeader(long header) throws IOException {
+    int newSize = 0;
+    
+    for (int i = 0; i < header; i++) {
+      if (pos == 0) {
+        newSize = skipUtfByteOrderMark();
+      } else {
+        newSize = in.readLine(value, maxLineLength, maxBytesToConsume(pos));
+        pos += newSize;
+      }
+    }
+    
+    if(newSize == 0) {
+      throw new RuntimeException("header value exceed the limit of the file");
+    }
   }
 
   private int maxBytesToConsume(long pos) {
     return isCompressedInput ? Integer.MAX_VALUE : (int) Math.max(Math.min(Integer.MAX_VALUE, end - pos), maxLineLength);
   }
 
-  private long getFilePosition() throws IOException {
+  public long getFilePosition() throws IOException {
     long retVal;
     if (isCompressedInput && null != filePosition) {
       retVal = filePosition.getPos();

@@ -12,12 +12,13 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.SplittableCompressionCodec;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.util.StopWatch;
 
@@ -27,12 +28,10 @@ import org.apache.hadoop.util.StopWatch;
  * end of the file, it mean we process the whole CSV in one task, no meaning for
  * map reduce way.
  * 
- * @author wangwei
- *
  * @param <K>
  * @param <V>
  */
-public abstract class CSVFileInputFormat<K, V> extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<K, V> {
+public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<LongWritable, Text> {
 
   // TODO remove them to the reader class to parse the single split
   public static String TALEND_ENCODING = "talend_encoding";
@@ -50,25 +49,40 @@ public abstract class CSVFileInputFormat<K, V> extends org.apache.hadoop.mapredu
   private static final double SPLIT_SLOP = 1.1;
 
   @Override
-  public RecordReader<K, V> createRecordReader(InputSplit arg0, TaskAttemptContext arg1) throws IOException, InterruptedException {
-    // TODO Auto-generated method stub
-    return null;
+  public CSVFileRecordReader createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException {
+    String delimiter = context.getConfiguration().get(TALEND_ROW_DELIMITED);
+    String encoding = context.getConfiguration().get(TALEND_ENCODING);
+    return createRecordReader(delimiter, encoding);
   }
 
-  // TODO
-  private long caculateSkipLength(FileStatus file, JobContext job, long header) throws IOException {
+  private CSVFileRecordReader createRecordReader(final String rowDelimiter, final String encoding) throws IOException {
+    byte[] recordDelimiterBytes = null;
+    if (null != rowDelimiter) {
+      recordDelimiterBytes = rowDelimiter.getBytes(encoding);
+    }
+    return new CSVFileRecordReader(recordDelimiterBytes);
+  }
+
+  private long caculateSkipLength(FileStatus file, JobContext job) throws IOException {
+    long header = job.getConfiguration().getLong(TALEND_HEADER, 0l);
+    String rowDelimiter = job.getConfiguration().get(TALEND_ROW_DELIMITED);
+    String encoding = job.getConfiguration().get(TALEND_ENCODING);
+
     if (header < 1) {
       return 0l;
     }
 
-    return 0l;
+    try(CSVFileRecordReader reader = this.createRecordReader(rowDelimiter, encoding)) {
+      reader.skipHeader(header);
+      // TODO check if right for compress especially
+      return reader.getFilePosition();
+    }
+   
   }
 
   @Override
   public List<InputSplit> getSplits(JobContext job) throws IOException {
     StopWatch sw = new StopWatch().start();
-
-    long header = job.getConfiguration().getLong(TALEND_HEADER, 0l);
 
     long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize(job));
     long maxSize = getMaxSplitSize(job);
@@ -81,7 +95,7 @@ public abstract class CSVFileInputFormat<K, V> extends org.apache.hadoop.mapredu
       long length = file.getLen();
 
       if (length != 0) {
-        long skipLength = caculateSkipLength(file, job, header);
+        long skipLength = caculateSkipLength(file, job);
 
         BlockLocation[] blkLocations;
         if (file instanceof LocatedFileStatus) {
