@@ -28,8 +28,6 @@ import org.apache.hadoop.util.StopWatch;
  * end of the file, it mean we process the whole CSV in one task, no meaning for
  * map reduce way.
  * 
- * @param <K>
- * @param <V>
  */
 public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<LongWritable, BytesWritable> {
 

@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.beam.sdk.transforms.DoFnTester;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.BytesWritable;
 import org.junit.Test;
 
 /**
@@ -18,7 +18,7 @@ import org.junit.Test;
 public class ExtractCsvRecordTest {
 
     /** The DoFn under test. */
-    private final DoFnTester<Text, IndexedRecord> fnBasic = DoFnTester.of(new SimpleRecordFormatCsvIO.ExtractCsvRecord(';', false, "UTF-8", null, null));
+    private final DoFnTester<BytesWritable, IndexedRecord> fnBasic = DoFnTester.of(new SimpleRecordFormatCsvIO.ExtractCsvRecord(';', false, "UTF-8", null, null));
 
     public static String[] toArray(IndexedRecord record) {
         String[] fields = new String[record.getSchema().getFields().size()];
@@ -35,9 +35,13 @@ public class ExtractCsvRecordTest {
         return out;
     }
 
-    public static void assertLine(String msg, DoFnTester<Text, IndexedRecord> fn, String inputLine, String... expected)
+    public static void assertLine(String msg, DoFnTester<BytesWritable, IndexedRecord> fn, String inputLine, String... expected)
             throws Exception {
-        assertThat(msg + ":" + inputLine, toArray(fn.processBundle(new Text(inputLine)).get(0)), arrayContaining(expected));
+        byte[] bytes = inputLine.getBytes("UTF-8");
+        
+        BytesWritable bsw = new BytesWritable(bytes);
+        
+        assertThat(msg + ":" + inputLine, toArray(fn.processBundle(bsw).get(0)), arrayContaining(expected));
     }
 
     @Test
@@ -48,9 +52,11 @@ public class ExtractCsvRecordTest {
                 assertLine("basic", fnBasic, inputLine, csvEx.getValues());
             }
         }
+        
+        BytesWritable bsw = new BytesWritable();
 
         // Empty lines are skipped
-        assertThat(fnBasic.processBundle(new Text("")), hasSize(0));
+        assertThat(fnBasic.processBundle(bsw), hasSize(0));
 
         // TODO: Error when three quotes
         // assertLine("basic", fnBasic, "\"\"\"", "\"");

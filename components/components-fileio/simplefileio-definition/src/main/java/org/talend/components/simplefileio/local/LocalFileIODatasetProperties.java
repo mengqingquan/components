@@ -62,7 +62,7 @@ public class LocalFileIODatasetProperties extends PropertiesImpl implements Data
     public Property<String> escapeCharacter = PropertyFactory.newString("escapeCharacter", "\\");
     
     ///////////////////////////////Excel format only parameters///////////////////////////////
-    public Property<String> sheet = PropertyFactory.newString("sheet");
+    //public Property<String> sheet = PropertyFactory.newString("sheet");
 
     public LocalFileIODatasetProperties(String name) {
         super(name);
@@ -101,7 +101,7 @@ public class LocalFileIODatasetProperties extends PropertiesImpl implements Data
         mainForm.addRow(escapeCharacter);
         
         //Excel only
-        mainForm.addRow(sheet);
+        //mainForm.addRow(sheet);
         
         //CSV and Excel Both
         mainForm.addRow(encoding);
@@ -136,11 +136,11 @@ public class LocalFileIODatasetProperties extends PropertiesImpl implements Data
         form.getWidget(escapeCharacter).setVisible(csvMode);
         
         //Excel
-        boolean excelMode = format.getValue() == SimpleFileIOFormat.EXCEL;
-        form.getWidget(sheet).setVisible(excelMode);
+        //boolean excelMode = format.getValue() == SimpleFileIOFormat.EXCEL;
+        //form.getWidget(sheet).setVisible(excelMode);
         
         //CSV and Excel both
-        boolean csvOrExcel = csvMode || excelMode;
+        boolean csvOrExcel = csvMode/* || excelMode */;
         form.getWidget(encoding).setVisible(csvOrExcel);
         form.getWidget(setHeaderLine).setVisible(csvOrExcel);
         form.getWidget(headerLine).setVisible(csvOrExcel && setHeaderLine.getValue());

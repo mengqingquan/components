@@ -19,7 +19,7 @@ package org.talend.components.simplefileio;
 public enum SimpleFileIOFormat {
     CSV,
     // JSON,
-    EXCEL,
+//    EXCEL,
     AVRO,
     PARQUET
 }

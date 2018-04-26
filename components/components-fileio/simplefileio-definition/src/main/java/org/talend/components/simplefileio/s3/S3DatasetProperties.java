@@ -100,6 +100,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public void setupProperties() {
         super.setupProperties();
         format.setValue(SimpleFileIOFormat.CSV);
+        encoding.setValue(EncodingType.UTF8);
     }
 
     @Override

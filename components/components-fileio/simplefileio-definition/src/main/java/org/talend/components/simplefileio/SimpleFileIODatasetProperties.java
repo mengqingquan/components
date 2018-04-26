@@ -66,6 +66,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     public void setupProperties() {
         super.setupProperties();
         format.setValue(SimpleFileIOFormat.CSV);
+        encoding.setValue(EncodingType.UTF8);
     }
 
     @Override

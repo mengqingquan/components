@@ -194,16 +194,12 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
   }
 
   public boolean nextKeyValue() throws IOException {
-    if (bytesValue == null) {
-      bytesValue = new BytesWritable();
-    }
-
     if (!isComplexCSV) {
       boolean hasNext = next();
 
       // TODO is it right? no need to copy? make sure it
       byte[] bytes = value.getBytes();
-      bytesValue.set(bytes, 0, bytes.length);
+      bytesValue = new BytesWritable(bytes);
 
       return hasNext;
     }
@@ -245,7 +241,7 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
     } while ((hasNext) && (numberOfTextEnclosureChar % 2 != 0));
 
     byte[] bytes = currentLine.getBytes(encoding);
-    bytesValue.set(bytes, 0, bytes.length);
+    bytesValue = new BytesWritable(bytes);
 
     if (numberOfTextEnclosureChar % 2 != 0) {
       // the loop exited because there is no more data, but we
