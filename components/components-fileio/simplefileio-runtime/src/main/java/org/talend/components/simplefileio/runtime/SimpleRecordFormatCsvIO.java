@@ -66,6 +66,14 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
     private final String recordDelimiter;
 
     private final String fieldDelimiter;
+    
+    private long header;
+    
+    private String encoding = "UTF-8";
+    
+    private String textEnclosure;
+    
+    private String escapeChar;
 
     public SimpleRecordFormatCsvIO(UgiDoAs doAs, String path, boolean overwrite, int limit, String recordDelimiter,
             String fieldDelimiter, boolean mergeOutput) {
@@ -84,9 +92,11 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
 
     @Override
     public PCollection<IndexedRecord> read(PBegin in) {
-
+        boolean isGSFileSystem = false;
+        
         PCollection<?> pc2;
         if (path.startsWith("gs://")) {
+            isGSFileSystem = true;
             pc2 = in.apply(TextIO.read().from(path));
         } else {
             CsvHdfsFileSource source = CsvHdfsFileSource.of(doAs, path, recordDelimiter);
@@ -99,7 +109,17 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
             pc2 = pc1.apply(Values.<BytesWritable> create());
         }
 
-        PCollection<IndexedRecord> pc3 = pc2.apply(ParDo.of(new ExtractCsvRecord<>(fieldDelimiter.charAt(0))));
+        Character te = null;
+        if(this.textEnclosure!=null && !this.textEnclosure.isEmpty()) {
+            te = this.textEnclosure.charAt(0);
+        }
+        
+        Character ec = null;
+        if(this.escapeChar!=null && !this.escapeChar.isEmpty()) {
+            ec = this.escapeChar.charAt(0);
+        }
+        
+        PCollection<IndexedRecord> pc3 = pc2.apply(ParDo.of(new ExtractCsvRecord<>(fieldDelimiter.charAt(0), isGSFileSystem, encoding, te, ec)));
         return pc3;
     }
 
@@ -169,12 +189,24 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
         }
 
         public final char fieldDelimiter;
+        
+        public final boolean isGSFileSystem; 
+        
+        public final String encoding; 
+        
+        public final Character textEnclosure; 
+        
+        public final Character escapeChar; 
 
         /** The converter is cached for performance. */
         private transient IndexedRecordConverter<CSVRecord, ? extends IndexedRecord> converter;
 
-        public ExtractCsvRecord(char fieldDelimiter) {
+        public ExtractCsvRecord(char fieldDelimiter, boolean isGSFileSystem, String encoding, Character textEnclosure, Character escapeChar) {
             this.fieldDelimiter = fieldDelimiter;
+            this.isGSFileSystem = isGSFileSystem;
+            this.encoding = encoding;
+            this.textEnclosure = textEnclosure;
+            this.escapeChar = escapeChar;
         }
 
         @ProcessElement
@@ -182,9 +214,30 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
             if (converter == null) {
                 converter = new SimpleFileIOAvroRegistry.CsvRecordToIndexedRecordConverter();
             }
-            String in = c.element().toString();
-            for (CSVRecord r : CSVFormat.RFC4180.withDelimiter(fieldDelimiter).parse(new StringReader(in)))
+            
+            if(isGSFileSystem) {
+                String in = c.element().toString();
+                for (CSVRecord r : CSVFormat.RFC4180.withDelimiter(fieldDelimiter).parse(new StringReader(in))) {
+                    c.output(converter.convertToAvro(r));
+                }
+                
+                return;
+            }
+            
+            BytesWritable bytes = (BytesWritable)c.element();
+            String rowValue = new String(bytes.getBytes(), encoding);
+            
+            CSVFormat cf = CSVFormat.RFC4180.withDelimiter(fieldDelimiter);
+            if(textEnclosure!=null) {
+                cf.withQuote(textEnclosure);
+            }
+            if(escapeChar!=null) {
+                cf.withEscape(escapeChar);
+            }
+            
+            for (CSVRecord r : cf.parse(new StringReader(rowValue))) {
                 c.output(converter.convertToAvro(r));
+            }
         }
     }
 

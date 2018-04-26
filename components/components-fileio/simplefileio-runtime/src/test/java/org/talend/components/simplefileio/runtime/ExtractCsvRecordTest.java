@@ -18,7 +18,7 @@ import org.junit.Test;
 public class ExtractCsvRecordTest {
 
     /** The DoFn under test. */
-    private final DoFnTester<Text, IndexedRecord> fnBasic = DoFnTester.of(new SimpleRecordFormatCsvIO.ExtractCsvRecord(';'));
+    private final DoFnTester<Text, IndexedRecord> fnBasic = DoFnTester.of(new SimpleRecordFormatCsvIO.ExtractCsvRecord(';', false, "UTF-8", null, null));
 
     public static String[] toArray(IndexedRecord record) {
         String[] fields = new String[record.getSchema().getFields().size()];

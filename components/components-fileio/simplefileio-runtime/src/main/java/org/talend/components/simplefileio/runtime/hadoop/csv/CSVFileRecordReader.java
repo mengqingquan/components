@@ -201,6 +201,7 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
     if (!isComplexCSV) {
       boolean hasNext = next();
 
+      // TODO is it right? no need to copy? make sure it
       byte[] bytes = value.getBytes();
       bytesValue.set(bytes, 0, bytes.length);
 

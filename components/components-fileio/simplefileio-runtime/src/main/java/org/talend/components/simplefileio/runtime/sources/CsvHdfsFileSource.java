@@ -24,7 +24,6 @@ import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
 /**
  * CSV implementation of HDFSFileSource.
  *
- * This implementation allows the recordDelimiter to be injected into the TextInputFormat.
  */
 public class CsvHdfsFileSource extends FileSourceBase<LongWritable, BytesWritable, CsvHdfsFileSource> {
 
@@ -36,7 +35,6 @@ public class CsvHdfsFileSource extends FileSourceBase<LongWritable, BytesWritabl
     private CsvHdfsFileSource(UgiDoAs doAs, String filepattern, String recordDelimiter, ExtraHadoopConfiguration extraConfig,
             SerializableSplit serializableSplit) {
         super(doAs, filepattern, CSVFileInputFormat.class, LongWritable.class, BytesWritable.class, extraConfig, serializableSplit);
-        getExtraHadoopConfiguration().set("textinputformat.record.delimiter", recordDelimiter);
     }
 
     private CsvHdfsFileSource(UgiDoAs doAs, String filepattern, ExtraHadoopConfiguration extraConfig,
