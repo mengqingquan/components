@@ -9,34 +9,38 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 public class CSVFileSplit extends FileSplit {
 
-  private long skipLength = 0l;
+  /**
+   * store the split index information about single file, we need it for checking if it's the first split
+   *
+   */
+  private int index = 0;
 
   public CSVFileSplit() {
   }
 
-  public CSVFileSplit(Path file, long start, long length, long skipLineLength, String[] hosts) {
+  public CSVFileSplit(Path file, long start, long length, int index, String[] hosts) {
     super(file, start, length, hosts);
-    this.skipLength = skipLineLength;
+    this.index = index;
   }
 
-  public CSVFileSplit(Path file, long start, long length, long skipLineLength, String[] hosts, String[] inMemoryHosts) {
+  public CSVFileSplit(Path file, long start, long length, int index, String[] hosts, String[] inMemoryHosts) {
     super(file, start, length, hosts, inMemoryHosts);
-    this.skipLength = skipLineLength;
+    this.index = index;
   }
 
   @Override
   public void write(DataOutput out) throws IOException {
     super.write(out);
-    out.writeLong(skipLength);
+    out.writeInt(index);
   }
 
   @Override
   public void readFields(DataInput in) throws IOException {
     super.readFields(in);
-    skipLength = in.readLong();
+    index = in.readInt();
   }
 
-  public long getSkipLineLength() {
-    return skipLength;
+  public int getIndex() {
+    return index;
   }
 }

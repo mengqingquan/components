@@ -52,15 +52,26 @@ public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib
   public CSVFileRecordReader createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException {
     String delimiter = context.getConfiguration().get(TALEND_ROW_DELIMITED);
     String encoding = context.getConfiguration().get(TALEND_ENCODING);
-    return createRecordReader(delimiter, encoding);
+
+    String textEnclosure = context.getConfiguration().get(TALEND_TEXT_ENCLOSURE);
+    String escapeChar = context.getConfiguration().get(TALEND_ESCAPE);
+
+    Character te = null;
+    Character ec = null;
+
+    if (textEnclosure != null && !textEnclosure.isEmpty()) {
+      te = textEnclosure.charAt(0);
+    }
+
+    if (escapeChar != null && !escapeChar.isEmpty()) {
+      ec = escapeChar.charAt(0);
+    }
+
+    return createRecordReader(delimiter, encoding, te, ec);
   }
 
-  private CSVFileRecordReader createRecordReader(final String rowDelimiter, final String encoding) throws IOException {
-    byte[] recordDelimiterBytes = null;
-    if (null != rowDelimiter) {
-      recordDelimiterBytes = rowDelimiter.getBytes(encoding);
-    }
-    return new CSVFileRecordReader(recordDelimiterBytes);
+  private CSVFileRecordReader createRecordReader(final String rowDelimiter, final String encoding, final Character textEnclosure, final Character escapeChar) throws IOException {
+    return new CSVFileRecordReader(rowDelimiter, encoding, textEnclosure, escapeChar);
   }
 
   private long caculateSkipLength(FileStatus file, JobContext job) throws IOException {
@@ -72,12 +83,10 @@ public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib
       return 0l;
     }
 
-    try(CSVFileRecordReader reader = this.createRecordReader(rowDelimiter, encoding)) {
-      reader.skipHeader(header);
+    try (CSVFileRecordReader reader = this.createRecordReader(rowDelimiter, encoding, null, null)) {
       // TODO check if right for compress especially
-      return reader.getFilePosition();
+      return reader.skipHeader(header);
     }
-   
   }
 
   @Override
@@ -104,6 +113,9 @@ public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib
           FileSystem fs = path.getFileSystem(job.getConfiguration());
           blkLocations = fs.getFileBlockLocations(file, 0, length);
         }
+
+        int splitIndex = 0;
+
         if (isSplitable(job, path)) {
           long blockSize = file.getBlockSize();
           long splitSize = computeSplitSize(blockSize, minSize, maxSize);
@@ -112,17 +124,17 @@ public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib
           while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
             long offset = length - bytesRemaining;
             int blkIndex = getBlockIndex(blkLocations, offset);
-            splits.add(makeSplit(path, offset, splitSize, skipLength, blkLocations[blkIndex].getHosts(), blkLocations[blkIndex].getCachedHosts()));
+            splits.add(makeSplit(path, offset, splitSize, splitIndex++, blkLocations[blkIndex].getHosts(), blkLocations[blkIndex].getCachedHosts()));
             bytesRemaining -= splitSize;
           }
 
           if (bytesRemaining != 0) {
             long offset = length - bytesRemaining;
             int blkIndex = getBlockIndex(blkLocations, offset);
-            splits.add(makeSplit(path, offset, bytesRemaining, skipLength, blkLocations[blkIndex].getHosts(), blkLocations[blkIndex].getCachedHosts()));
+            splits.add(makeSplit(path, offset, bytesRemaining, splitIndex++, blkLocations[blkIndex].getHosts(), blkLocations[blkIndex].getCachedHosts()));
           }
         } else { // not splitable
-          splits.add(makeSplit(path, skipLength, length - skipLength, skipLength, blkLocations[0].getHosts(), blkLocations[0].getCachedHosts()));
+          splits.add(makeSplit(path, skipLength, length - skipLength, splitIndex++, blkLocations[0].getHosts(), blkLocations[0].getCachedHosts()));
         }
       } else {
         // Create empty hosts array for zero length files
@@ -162,12 +174,12 @@ public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib
     return super.listStatus(job);
   }
 
-  protected InputSplit makeSplit(Path file, long start, long length, long skipLength, String[] hosts) {
-    return new CSVFileSplit(file, start, length, skipLength, hosts);
+  protected InputSplit makeSplit(Path file, long start, long length, int splitIndex, String[] hosts) {
+    return new CSVFileSplit(file, start, length, splitIndex, hosts);
   }
 
-  protected InputSplit makeSplit(Path file, long start, long length, long skipLength, String[] hosts, String[] inMemoryHosts) {
-    return new CSVFileSplit(file, start, length, skipLength, hosts, inMemoryHosts);
+  protected InputSplit makeSplit(Path file, long start, long length, int splitIndex, String[] hosts, String[] inMemoryHosts) {
+    return new CSVFileSplit(file, start, length, splitIndex, hosts, inMemoryHosts);
   }
 
 }

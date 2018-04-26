@@ -1,6 +1,7 @@
 package org.talend.components.simplefileio.runtime.hadoop.csv;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,16 +38,38 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
   private Seekable filePosition;
   private int maxLineLength;
   private LongWritable key;
+
   private Text value;
+  private BytesWritable bytesValue;
+
   private boolean isCompressedInput;
   private Decompressor decompressor;
+
+  private String recordDelimiter;
   private byte[] recordDelimiterBytes;
+
+  private String encoding = "UTF-8";
+
+  // now only one char is valid, mutli characters is not be considered.
+  private Character textEnclosure;
+  private Character escapeChar;
+
+  private boolean isComplexCSV = false;
 
   public CSVFileRecordReader() {
   }
 
-  public CSVFileRecordReader(byte[] recordDelimiter) {
-    this.recordDelimiterBytes = recordDelimiter;
+  public CSVFileRecordReader(String recordDelimiter, String encoding, Character textEnclosure, Character escapeChar) throws UnsupportedEncodingException {
+    this.recordDelimiter = recordDelimiter;
+    if (recordDelimiter != null) {
+      this.recordDelimiterBytes = recordDelimiter.getBytes(encoding);
+    }
+    this.encoding = encoding;
+
+    this.textEnclosure = textEnclosure;
+    this.escapeChar = escapeChar;
+
+    this.isComplexCSV = (textEnclosure != null) || (escapeChar != null);
   }
 
   public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException {
@@ -82,52 +105,25 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
     }
 
     // Support the header
-    long skipLength = 0;
+    int splitIndex = 0;
     if (split instanceof CSVFileSplit) {
-      skipLength = ((CSVFileSplit) split).getSkipLineLength();
-    }
-
-    boolean isFirstSplit = true;
-    if (isCompressedInput) {
-      // TODO check if right
-      isFirstSplit = start != skipLength;
-    } else {
-      isFirstSplit = start != skipLength;
+      splitIndex = ((CSVFileSplit) split).getIndex();
     }
 
     // If this is not the first split, we always throw away first record
     // because we always (except the last split) read one extra line in
     // next() method.
-    if (isFirstSplit) {
+    if (splitIndex != 0) {
       start += in.readLine(new Text(), 0, maxBytesToConsume(start));
     }
     this.pos = start;
-  }
-
-  // call by input format to skip the fixed number header line and get the
-  // new start location
-  public void skipHeader(long header) throws IOException {
-    int newSize = 0;
-    
-    for (int i = 0; i < header; i++) {
-      if (pos == 0) {
-        newSize = skipUtfByteOrderMark();
-      } else {
-        newSize = in.readLine(value, maxLineLength, maxBytesToConsume(pos));
-        pos += newSize;
-      }
-    }
-    
-    if(newSize == 0) {
-      throw new RuntimeException("header value exceed the limit of the file");
-    }
   }
 
   private int maxBytesToConsume(long pos) {
     return isCompressedInput ? Integer.MAX_VALUE : (int) Math.max(Math.min(Integer.MAX_VALUE, end - pos), maxLineLength);
   }
 
-  public long getFilePosition() throws IOException {
+  private long getFilePosition() throws IOException {
     long retVal;
     if (isCompressedInput && null != filePosition) {
       retVal = filePosition.getPos();
@@ -168,7 +164,98 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
     return newSize;
   }
 
+  /**
+   * call by input format to skip the fixed number header line and get the new
+   * start location
+   * 
+   * FIXME the logic is the same with the studio one, but find a bug : can't
+   * work well with escape char and text enclosure when newline characters
+   * exists in one CSV column. As if the escape char and text enclosure exists,
+   * only process by one map, maybe for fixing it, in future, we should provide
+   * another input format for them, not split and more easy
+   */
+  public long skipHeader(long header) throws IOException {
+    int newSize = 0;
+
+    for (int i = 0; i < header; i++) {
+      if (pos == 0) {
+        newSize = skipUtfByteOrderMark();
+      } else {
+        newSize = in.readLine(value, 0, maxBytesToConsume(pos));
+        pos += newSize;
+      }
+    }
+
+    if (newSize == 0) {
+      throw new RuntimeException("header value exceed the limit of the file");
+    }
+
+    return getFilePosition();
+  }
+
   public boolean nextKeyValue() throws IOException {
+    if (bytesValue == null) {
+      bytesValue = new BytesWritable();
+    }
+
+    if (!isComplexCSV) {
+      boolean hasNext = next();
+
+      byte[] bytes = value.getBytes();
+      bytesValue.set(bytes, 0, bytes.length);
+
+      return hasNext;
+    }
+
+    // the code below only execute in one single map, no need to consider multi
+    // split
+
+    String currentLine = null;
+    int numberOfTextEnclosureChar = 0;
+
+    // We are looping on the input until we find a pair number of
+    // text enclosure character.
+    // It allow the handle schema like " 'abc\ndef' " (with "'" as
+    // text enclosure character)
+
+    boolean hasNext = true;
+    do {
+      hasNext = next();
+      if (hasNext) {
+        // There is still data to process ie we are not at the
+        // end of a logical line
+        String currentSubline = new String(java.util.Arrays.copyOfRange(value.getBytes(), 0, value.getLength()), encoding);
+
+        // Get the number of escape character on the current
+        // substring,
+        // in order to check if we have or not a complete column
+        for (int index = currentSubline.indexOf(textEnclosure); index >= 0; index = currentSubline.indexOf(textEnclosure, index + 1)) {
+          if ((index == 0) || (currentSubline.charAt(index - 1) != escapeChar)) {
+            numberOfTextEnclosureChar++;
+          }
+
+        }
+        if (currentLine == null) {
+          currentLine = currentSubline;
+        } else {
+          currentLine += recordDelimiter + currentSubline;
+        }
+      }
+    } while ((hasNext) && (numberOfTextEnclosureChar % 2 != 0));
+
+    byte[] bytes = currentLine.getBytes(encoding);
+    bytesValue.set(bytes, 0, bytes.length);
+
+    if (numberOfTextEnclosureChar % 2 != 0) {
+      // the loop exited because there is no more data, but we
+      // still need to send the current one
+      return true;
+    } else {
+      return hasNext;
+    }
+  }
+
+  private boolean next() throws IOException {
     if (key == null) {
       key = new LongWritable();
     }
@@ -210,8 +297,7 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
 
   @Override
   public BytesWritable getCurrentValue() {
-    //TODO reuse single one is better, seems not here, will check here
-    return new BytesWritable(value.getBytes());
+    return bytesValue;
   }
 
   /**
