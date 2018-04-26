@@ -33,10 +33,8 @@ import org.apache.hadoop.util.StopWatch;
  */
 public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<LongWritable, BytesWritable> {
 
-  // TODO remove them to the reader class to parse the single split
   public static String TALEND_ENCODING = "talend_encoding";
-  public static String TALEND_FIELD_DELIMITED = "talend_field_delimited";
-
+  
   public static String TALEND_TEXT_ENCLOSURE = "talend_text_enclosure";
   public static String TALEND_ESCAPE = "talend_escape";
   // not in the design

@@ -18,6 +18,7 @@ import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.talend.components.api.component.runtime.RuntimableRuntime;
 import org.talend.components.api.container.RuntimeContainer;
+import org.talend.components.simplefileio.SimpleFileIODatasetProperties;
 import org.talend.components.simplefileio.input.SimpleFileIOInputProperties;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
 import org.talend.components.simplefileio.runtime.ugi.UgiExceptionHandler;
@@ -60,8 +61,10 @@ public class SimpleFileIOInputRuntime extends PTransform<PBegin, PCollection<Ind
             break;
 
         case CSV:
-            rf = new SimpleRecordFormatCsvIO(doAs, path, overwrite, limit, properties.getDatasetProperties().getRecordDelimiter(),
-                    properties.getDatasetProperties().getFieldDelimiter(), mergeOutput);
+            SimpleFileIODatasetProperties dataset = properties.getDatasetProperties();
+            rf = new SimpleRecordFormatCsvIO(doAs, path, limit, dataset.getRecordDelimiter(),
+                dataset.getFieldDelimiter(), dataset.getEncoding(), 
+                dataset.getHeaderLine(), dataset.getTextEnclosureCharacter(), dataset.getEscapeCharacter());
             break;
 
         case PARQUET:
@@ -75,4 +78,5 @@ public class SimpleFileIOInputRuntime extends PTransform<PBegin, PCollection<Ind
 
         return rf.read(in);
     }
+    
 }

@@ -32,9 +32,15 @@ public class CsvHdfsFileSource extends FileSourceBase<LongWritable, BytesWritabl
         SimpleFileIOAvroRegistry.get();
     }
 
-    private CsvHdfsFileSource(UgiDoAs doAs, String filepattern, String recordDelimiter, ExtraHadoopConfiguration extraConfig,
+    private CsvHdfsFileSource(UgiDoAs doAs, String filepattern, String recordDelimiter, String encoding, long header, String textEnclosure, String escapeChar, ExtraHadoopConfiguration extraConfig,
             SerializableSplit serializableSplit) {
         super(doAs, filepattern, CSVFileInputFormat.class, LongWritable.class, BytesWritable.class, extraConfig, serializableSplit);
+        ExtraHadoopConfiguration hadoop_config = getExtraHadoopConfiguration();
+        hadoop_config.set(CSVFileInputFormat.TALEND_ENCODING, encoding);
+        hadoop_config.set(CSVFileInputFormat.TALEND_HEADER, String.valueOf(header));
+        hadoop_config.set(CSVFileInputFormat.TALEND_ROW_DELIMITED, recordDelimiter);
+        hadoop_config.set(CSVFileInputFormat.TALEND_TEXT_ENCLOSURE, textEnclosure);
+        hadoop_config.set(CSVFileInputFormat.TALEND_ESCAPE, escapeChar);
     }
 
     private CsvHdfsFileSource(UgiDoAs doAs, String filepattern, ExtraHadoopConfiguration extraConfig,
@@ -42,8 +48,8 @@ public class CsvHdfsFileSource extends FileSourceBase<LongWritable, BytesWritabl
         super(doAs, filepattern, CSVFileInputFormat.class, LongWritable.class, BytesWritable.class, extraConfig, serializableSplit);
     }
 
-    public static CsvHdfsFileSource of(UgiDoAs doAs, String filepattern, String recordDelimiter) {
-        return new CsvHdfsFileSource(doAs, filepattern, recordDelimiter, new ExtraHadoopConfiguration(), null);
+    public static CsvHdfsFileSource of(UgiDoAs doAs, String filepattern, String recordDelimiter, String encoding, long header, String textEnclosure, String escapeChar) {
+        return new CsvHdfsFileSource(doAs, filepattern, recordDelimiter, encoding, header, textEnclosure, escapeChar, new ExtraHadoopConfiguration(), null);
     }
 
     @Override

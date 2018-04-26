@@ -24,6 +24,7 @@ import org.talend.components.simplefileio.runtime.SimpleRecordFormatBase;
 import org.talend.components.simplefileio.runtime.SimpleRecordFormatCsvIO;
 import org.talend.components.simplefileio.runtime.SimpleRecordFormatParquetIO;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
+import org.talend.components.simplefileio.s3.S3DatasetProperties;
 import org.talend.components.simplefileio.s3.input.S3InputProperties;
 import org.talend.daikon.properties.ValidationResult;
 
@@ -63,8 +64,10 @@ public class S3InputRuntime extends PTransform<PBegin, PCollection<IndexedRecord
             break;
 
         case CSV:
-            rf = new SimpleRecordFormatCsvIO(doAs, path, overwrite, limit, properties.getDatasetProperties().getRecordDelimiter(),
-                    properties.getDatasetProperties().getFieldDelimiter(), mergeOutput);
+            S3DatasetProperties dataset = properties.getDatasetProperties();
+            rf = new SimpleRecordFormatCsvIO(doAs, path, limit, dataset.getRecordDelimiter(),
+                dataset.getFieldDelimiter(), dataset.getEncoding(), 
+                dataset.getHeaderLine(), dataset.getTextEnclosureCharacter(), dataset.getEscapeCharacter());
             break;
 
         case PARQUET:

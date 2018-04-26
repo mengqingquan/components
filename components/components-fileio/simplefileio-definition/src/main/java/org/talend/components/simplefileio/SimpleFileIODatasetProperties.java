@@ -14,6 +14,7 @@
 package org.talend.components.simplefileio;
 
 import org.talend.components.common.dataset.DatasetProperties;
+import org.talend.components.simplefileio.local.EncodingType;
 import org.talend.daikon.properties.PropertiesImpl;
 import org.talend.daikon.properties.ReferenceProperties;
 import org.talend.daikon.properties.presentation.Form;
@@ -35,6 +36,14 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
             .setValue(FieldDelimiterType.SEMICOLON);
 
     public Property<String> specificFieldDelimiter = PropertyFactory.newString("specificFieldDelimiter", ";");
+    
+    public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class);
+    public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", false);
+    public Property<Integer> headerLine = PropertyFactory.newInteger("headerLine", 0);
+    
+    //advice not set them as default they break the split function for hadoop and beam
+    public Property<String> textEnclosureCharacter = PropertyFactory.newString("textEnclosureCharacter", "");
+    public Property<String> escapeCharacter = PropertyFactory.newString("escapeCharacter", "");
 
     public final transient ReferenceProperties<SimpleFileIODatastoreProperties> datastoreRef = new ReferenceProperties<>(
             "datastoreRef", SimpleFileIODatastoreDefinition.NAME);
@@ -69,6 +78,15 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
         mainForm.addRow(specificRecordDelimiter);
         mainForm.addRow(fieldDelimiter);
         mainForm.addRow(specificFieldDelimiter);
+        
+        //CSV properties
+        mainForm.addRow(textEnclosureCharacter);
+        mainForm.addRow(escapeCharacter);
+        mainForm.addRow(encoding);
+        mainForm.addRow(setHeaderLine);
+        mainForm.addColumn(headerLine);
+        
+        //Excel TODO
     }
 
     @Override
@@ -76,14 +94,21 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
         super.refreshLayout(form);
         // Main properties
         if (form.getName().equals(Form.MAIN)) {
-            form.getWidget(recordDelimiter).setVisible(format.getValue() == SimpleFileIOFormat.CSV);
+            boolean isCSV = format.getValue() == SimpleFileIOFormat.CSV;
+          
+            form.getWidget(recordDelimiter).setVisible(isCSV);
             form.getWidget(specificRecordDelimiter).setVisible(
-                    format.getValue() == SimpleFileIOFormat.CSV && recordDelimiter.getValue().equals(RecordDelimiterType.OTHER));
+                isCSV && recordDelimiter.getValue().equals(RecordDelimiterType.OTHER));
 
-            form.getWidget(fieldDelimiter).setVisible(format.getValue() == SimpleFileIOFormat.CSV);
+            form.getWidget(fieldDelimiter).setVisible(isCSV);
             form.getWidget(specificFieldDelimiter).setVisible(
-                    format.getValue() == SimpleFileIOFormat.CSV && fieldDelimiter.getValue().equals(FieldDelimiterType.OTHER));
-
+                isCSV && fieldDelimiter.getValue().equals(FieldDelimiterType.OTHER));
+            
+            form.getWidget(textEnclosureCharacter).setVisible(isCSV);
+            form.getWidget(escapeCharacter).setVisible(isCSV);
+            form.getWidget(encoding).setVisible(isCSV);
+            form.getWidget(setHeaderLine).setVisible(isCSV);
+            form.getWidget(headerLine).setVisible(isCSV && setHeaderLine.getValue());
         }
     }
 
@@ -92,6 +117,10 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     }
 
     public void afterRecordDelimiter() {
+        refreshLayout(getForm(Form.MAIN));
+    }
+    
+    public void afterSetHeaderLine() {
         refreshLayout(getForm(Form.MAIN));
     }
 
@@ -148,5 +177,28 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
         public String getDelimiter() {
             return value;
         }
+    }
+    
+    public String getEncoding() {
+        return encoding.getValue().name();
+    }
+  
+    public long getHeaderLine() {
+      if(setHeaderLine.getValue()) {
+          Integer value = headerLine.getValue();
+          if(value != null) { 
+              return Math.max(0l, value.longValue());
+          }
+      }
+      
+      return 0l;
+    }
+  
+    public String getEscapeCharacter() {
+      return escapeCharacter.getValue();
+    }
+  
+    public String getTextEnclosureCharacter() {
+      return textEnclosureCharacter.getValue();
     }
 }

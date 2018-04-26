@@ -20,6 +20,7 @@ import org.talend.components.common.dataset.DatasetProperties;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.FieldDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.RecordDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIOFormat;
+import org.talend.components.simplefileio.local.EncodingType;
 import org.talend.components.simplefileio.s3.runtime.IS3DatasetRuntime;
 import org.talend.daikon.exception.TalendRuntimeException;
 import org.talend.daikon.properties.PropertiesImpl;
@@ -67,6 +68,14 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             .setValue(FieldDelimiterType.SEMICOLON);
 
     public Property<String> specificFieldDelimiter = PropertyFactory.newString("specificFieldDelimiter", ";");
+    
+    public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class);
+    public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", false);
+    public Property<Integer> headerLine = PropertyFactory.newInteger("headerLine", 0);
+    
+    //advice not set them as default they break the split function for hadoop and beam
+    public Property<String> textEnclosureCharacter = PropertyFactory.newString("textEnclosureCharacter", "");
+    public Property<String> escapeCharacter = PropertyFactory.newString("escapeCharacter", "");
 
     // TODO: If data-in-motion can be activated in the future, remove this flag.
     public static final boolean ACTIVATE_DATA_IN_MOTION = false;
@@ -113,6 +122,15 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         mainForm.addRow(specificRecordDelimiter);
         mainForm.addRow(fieldDelimiter);
         mainForm.addRow(specificFieldDelimiter);
+        
+        //CSV properties
+        mainForm.addRow(textEnclosureCharacter);
+        mainForm.addRow(escapeCharacter);
+        mainForm.addRow(encoding);
+        mainForm.addRow(setHeaderLine);
+        mainForm.addColumn(headerLine);
+        
+        //Excel TODO
     }
 
     @Override
@@ -143,6 +161,12 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             form.getWidget(fieldDelimiter).setVisible(isCSV);
             form.getWidget(specificFieldDelimiter)
                     .setVisible(isCSV && fieldDelimiter.getValue().equals(FieldDelimiterType.OTHER));
+            
+            form.getWidget(textEnclosureCharacter).setVisible(isCSV);
+            form.getWidget(escapeCharacter).setVisible(isCSV);
+            form.getWidget(encoding).setVisible(isCSV);
+            form.getWidget(setHeaderLine).setVisible(isCSV);
+            form.getWidget(headerLine).setVisible(isCSV && setHeaderLine.getValue());
         }
     }
 
@@ -180,6 +204,10 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public void afterRecordDelimiter() {
         refreshLayout(getForm(Form.MAIN));
     }
+    
+    public void afterSetHeaderLine() {
+        refreshLayout(getForm(Form.MAIN));
+    }
 
     public String getRecordDelimiter() {
         if (RecordDelimiterType.OTHER.equals(recordDelimiter.getValue())) {
@@ -199,5 +227,28 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
 
     public void afterFormat() {
         refreshLayout(getForm(Form.MAIN));
+    }
+
+    public String getEncoding() {
+        return encoding.getValue().name();
+    }
+
+    public long getHeaderLine() {
+      if(setHeaderLine.getValue()) {
+          Integer value = headerLine.getValue();
+          if(value != null) { 
+              return Math.max(0l, value.longValue());
+          }
+      }
+      
+      return 0l;
+    }
+
+    public String getEscapeCharacter() {
+      return escapeCharacter.getValue();
+    }
+
+    public String getTextEnclosureCharacter() {
+      return textEnclosureCharacter.getValue();
     }
 }

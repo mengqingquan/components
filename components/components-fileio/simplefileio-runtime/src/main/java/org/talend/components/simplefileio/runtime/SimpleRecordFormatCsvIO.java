@@ -67,14 +67,32 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
 
     private final String fieldDelimiter;
     
-    private long header;
-    
     private String encoding = "UTF-8";
+    
+    private long header;
     
     private String textEnclosure;
     
     private String escapeChar;
 
+    /**
+     * work for the reading
+     * @param doAs
+     * @param path
+     * @param limit
+     * @param recordDelimiter
+     * @param fieldDelimiter
+     */
+    
+    public SimpleRecordFormatCsvIO(UgiDoAs doAs, String path, int limit, String recordDelimiter,
+            String fieldDelimiter, String encoding, long header, String textEnclosure, String escapeChar) {
+        this(doAs, path, false, limit, recordDelimiter, fieldDelimiter, false);
+        this.encoding = encoding;
+        this.header = header;
+        this.textEnclosure = textEnclosure;
+        this.escapeChar = escapeChar;
+    }
+    
     public SimpleRecordFormatCsvIO(UgiDoAs doAs, String path, boolean overwrite, int limit, String recordDelimiter,
             String fieldDelimiter, boolean mergeOutput) {
         super(doAs, path, overwrite, limit, mergeOutput);
@@ -99,7 +117,7 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
             isGSFileSystem = true;
             pc2 = in.apply(TextIO.read().from(path));
         } else {
-            CsvHdfsFileSource source = CsvHdfsFileSource.of(doAs, path, recordDelimiter);
+            CsvHdfsFileSource source = CsvHdfsFileSource.of(doAs, path, recordDelimiter, encoding, header, textEnclosure, escapeChar);
             source.getExtraHadoopConfiguration().addFrom(getExtraHadoopConfiguration());
 
             source.setLimit(limit);
