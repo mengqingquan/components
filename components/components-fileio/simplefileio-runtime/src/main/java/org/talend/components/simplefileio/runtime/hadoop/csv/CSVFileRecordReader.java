@@ -198,8 +198,8 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
       boolean hasNext = next();
 
       if(hasNext) {
-        // TODO is it right? no need to copy? make sure it
-        byte[] bytes = value.getBytes();
+        // TODO not use value.getBytes() directly, as not sure value.getLength() == value.getBytes().length, will use copyBytes
+        byte[] bytes = java.util.Arrays.copyOfRange(value.getBytes(), 0, value.getLength());
         bytesValue = new BytesWritable(bytes);
       } else {
         bytesValue = null;
