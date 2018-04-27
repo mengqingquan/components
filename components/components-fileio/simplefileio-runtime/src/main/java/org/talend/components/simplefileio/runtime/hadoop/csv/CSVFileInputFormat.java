@@ -29,7 +29,7 @@ import org.apache.hadoop.util.StopWatch;
  * map reduce way.
  * 
  */
-public abstract class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<LongWritable, BytesWritable> {
+public class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<LongWritable, BytesWritable> {
 
   public static String TALEND_ENCODING = "talend_encoding";
   

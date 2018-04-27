@@ -243,7 +243,7 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
             }
             
             BytesWritable bytes = (BytesWritable)c.element();
-            String rowValue = new String(bytes.getBytes(), encoding);
+            String rowValue = new String(bytes.copyBytes(), encoding);
             
             CSVFormat cf = CSVFormat.RFC4180.withDelimiter(fieldDelimiter);
             if(textEnclosure!=null) {

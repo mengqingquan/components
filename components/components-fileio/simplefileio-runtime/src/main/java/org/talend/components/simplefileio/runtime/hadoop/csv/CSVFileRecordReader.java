@@ -197,9 +197,13 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
     if (!isComplexCSV) {
       boolean hasNext = next();
 
-      // TODO is it right? no need to copy? make sure it
-      byte[] bytes = value.getBytes();
-      bytesValue = new BytesWritable(bytes);
+      if(hasNext) {
+        // TODO is it right? no need to copy? make sure it
+        byte[] bytes = value.getBytes();
+        bytesValue = new BytesWritable(bytes);
+      } else {
+        bytesValue = null;
+      }
 
       return hasNext;
     }
