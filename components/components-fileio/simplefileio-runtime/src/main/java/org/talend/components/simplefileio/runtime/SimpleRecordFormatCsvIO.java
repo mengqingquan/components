@@ -245,12 +245,19 @@ public class SimpleRecordFormatCsvIO extends SimpleRecordFormatBase {
             BytesWritable bytes = (BytesWritable)c.element();
             String rowValue = new String(bytes.copyBytes(), encoding);
             
+            //CSVFormat.RFC4180 use " as quote and no escape char and "," as field delimiter
+            
+            //TODO create it every time? performance?
             CSVFormat cf = CSVFormat.RFC4180.withDelimiter(fieldDelimiter);
+            //the with method return a new object, so have to assign back
             if(textEnclosure!=null) {
-                cf.withQuote(textEnclosure);
+                cf = cf.withQuote(textEnclosure);
+            } else {
+                cf = cf.withQuote(null);
             }
+            
             if(escapeChar!=null) {
-                cf.withEscape(escapeChar);
+                cf = cf.withEscape(escapeChar);
             }
             
             for (CSVRecord r : cf.parse(new StringReader(rowValue))) {

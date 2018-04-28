@@ -294,6 +294,8 @@ public class SimpleFileIOInputRuntimeTest {
         // Configure the component.
         SimpleFileIOInputProperties inputProps = createInputComponentProperties();
         inputProps.getDatasetProperties().path.setValue(fileSpec);
+        //the default text enclosure is null as it make the CSV content can't be split if not null.
+        inputProps.getDatasetProperties().textEnclosureCharacter.setValue("\"");
 
         // Create the runtime.
         SimpleFileIOInputRuntime runtime = new SimpleFileIOInputRuntime();

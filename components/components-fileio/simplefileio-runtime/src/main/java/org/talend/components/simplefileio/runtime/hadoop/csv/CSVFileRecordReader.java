@@ -7,6 +7,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.Seekable;
@@ -20,6 +21,7 @@ import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.io.compress.SplitCompressionInputStream;
 import org.apache.hadoop.io.compress.SplittableCompressionCodec;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.CompressedSplitLineReader;
@@ -173,8 +175,43 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
    * exists in one CSV column. As if the escape char and text enclosure exists,
    * only process by one map, maybe for fixing it, in future, we should provide
    * another input format for them, not split and more easy
+   * 
+   * don't support the header in multi files
    */
-  public long skipHeader(long header) throws IOException {
+  public long skipHeader(FileStatus fss, long header, JobContext context) throws IOException {
+    Configuration job = context.getConfiguration();
+    
+    start = 0;
+    end = fss.getLen();
+    
+    Path file = fss.getPath();
+    final FileSystem fs = file.getFileSystem(job);
+    fileIn = fs.open(file);
+    
+    CompressionCodec codec = new CompressionCodecFactory(job).getCodec(file);
+    if (null != codec) {
+      isCompressedInput = true;
+      decompressor = CodecPool.getDecompressor(codec);
+      if (codec instanceof SplittableCompressionCodec) {
+        final SplitCompressionInputStream cIn = ((SplittableCompressionCodec) codec).createInputStream(fileIn, decompressor, start, end, SplittableCompressionCodec.READ_MODE.BYBLOCK);
+        in = new CompressedSplitLineReader(cIn, job, this.recordDelimiterBytes);
+        start = cIn.getAdjustedStart();
+        end = cIn.getAdjustedEnd();
+        filePosition = cIn;
+      } else {
+        in = new SplitLineReader(codec.createInputStream(fileIn, decompressor), job, this.recordDelimiterBytes);
+        filePosition = fileIn;
+      }
+    } else {
+      fileIn.seek(start);
+      in = new SplitLineReader(fileIn, job, this.recordDelimiterBytes);
+      filePosition = fileIn;
+    }
+    
+    this.pos = start;
+    
+    value = new Text();
+    
     int newSize = 0;
 
     for (int i = 0; i < header; i++) {
@@ -194,7 +231,7 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
   }
 
   public boolean nextKeyValue() throws IOException {
-    if (!isComplexCSV) {
+    if (!isComplexCSV || (textEnclosure == null)) {//escape char also can escape newLine?not common, textEnclosure is more common for that case.
       boolean hasNext = next();
 
       if(hasNext) {
@@ -231,7 +268,7 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
         // substring,
         // in order to check if we have or not a complete column
         for (int index = currentSubline.indexOf(textEnclosure); index >= 0; index = currentSubline.indexOf(textEnclosure, index + 1)) {
-          if ((index == 0) || (currentSubline.charAt(index - 1) != escapeChar)) {
+          if ((index == 0) || (escapeChar==null) || (currentSubline.charAt(index - 1) != escapeChar)) {
             numberOfTextEnclosureChar++;
           }
 
@@ -244,16 +281,14 @@ public class CSVFileRecordReader extends RecordReader<LongWritable, BytesWritabl
       }
     } while ((hasNext) && (numberOfTextEnclosureChar % 2 != 0));
 
-    byte[] bytes = currentLine.getBytes(encoding);
-    bytesValue = new BytesWritable(bytes);
-
-    if (numberOfTextEnclosureChar % 2 != 0) {
-      // the loop exited because there is no more data, but we
-      // still need to send the current one
-      return true;
-    } else {
-      return hasNext;
+    hasNext = (numberOfTextEnclosureChar % 2 != 0) || hasNext;
+    
+    if(hasNext) {
+      byte[] bytes = currentLine.getBytes(encoding);
+      bytesValue = new BytesWritable(bytes);
     }
+    
+    return hasNext;
   }
 
   private boolean next() throws IOException {

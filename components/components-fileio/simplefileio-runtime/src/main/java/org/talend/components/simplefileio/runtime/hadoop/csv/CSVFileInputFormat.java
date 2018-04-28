@@ -81,7 +81,7 @@ public class CSVFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.Fi
 
     try (CSVFileRecordReader reader = this.createRecordReader(rowDelimiter, encoding, null, null)) {
       // TODO check if right for compress especially
-      return reader.skipHeader(header);
+      return reader.skipHeader(file, header, job);
     }
   }
 

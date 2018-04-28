@@ -18,6 +18,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.talend.components.test.RecordSetUtil.getEmptyTestData;
 import static org.talend.components.test.RecordSetUtil.getSimpleTestData;
+import static org.talend.components.test.RecordSetUtil.writeCsvFile;
 import static org.talend.components.test.RecordSetUtil.writeRandomAvroFile;
 import static org.talend.components.test.RecordSetUtil.writeRandomCsvFile;
 
@@ -33,6 +34,7 @@ import org.talend.components.common.dataset.DatasetDefinition;
 import org.talend.components.simplefileio.SimpleFileIODatasetDefinition;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties;
 import org.talend.components.simplefileio.SimpleFileIOFormat;
+import org.talend.components.simplefileio.local.EncodingType;
 import org.talend.components.test.MiniDfsResource;
 import org.talend.components.test.RecordSet;
 import org.talend.daikon.java8.Consumer;
@@ -111,8 +113,8 @@ public class SimpleFileIODatasetRuntimeTest {
     @Test
     public void testGetSampleCsv() throws Exception {
         RecordSet rs = getSimpleTestData(0);
-        writeRandomCsvFile(mini.getFs(), "/user/test/input.csv", rs);
-        String fileSpec = mini.getFs().getUri().resolve("/user/test/input.csv").toString();
+        writeRandomCsvFile(mini.getFs(), "/user/test/input5.csv", rs, "UTF-8");
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/input5.csv").toString();
 
         // Configure the component.
         SimpleFileIODatasetProperties props = createDatasetProperties();
@@ -137,15 +139,196 @@ public class SimpleFileIODatasetRuntimeTest {
         assertThat(actual, hasSize(10));
         // assertThat(actual, (Matcher) equalTo(rs.getAllData()));
     }
+    
+    @Test
+    public void testGetSampleCsv_header() throws Exception {
+        RecordSet rs = getSimpleTestData(0);
+        writeRandomCsvFile(mini.getFs(), "/user/test/input4.csv", rs, "UTF-8");
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/input4.csv").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.format.setValue(SimpleFileIOFormat.CSV);
+        props.path.setValue(fileSpec);
+        props.setHeaderLine.setValue(true);
+        props.headerLine.setValue(3);
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(7));
+    }
+    
+    @Test
+    public void testGetSampleCsv_encoding() throws Exception {
+        RecordSet rs = getSimpleTestData(0);
+        writeRandomCsvFile(mini.getFs(), "/user/test/input3.csv", rs, "GBK");
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/input3.csv").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.format.setValue(SimpleFileIOFormat.CSV);
+        props.path.setValue(fileSpec);
+        props.encoding.setValue(EncodingType.GBK);
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(10));
+    }
+    
+    @Test
+    public void testGetSampleCsv_encoding_header() throws Exception {
+        RecordSet rs = getSimpleTestData(0);
+        writeRandomCsvFile(mini.getFs(), "/user/test/input2.csv", rs, "GBK");
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/input2.csv").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.format.setValue(SimpleFileIOFormat.CSV);
+        props.path.setValue(fileSpec);
+        props.encoding.setValue(EncodingType.GBK);
+        props.setHeaderLine.setValue(true);
+        props.headerLine.setValue(1);
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(9));
+    }
+    
+    @Test
+    public void testGetSampleCsv_textEnclosure() throws Exception {
+        String content = "\"wang;wei\";Beijing;100\n\"gao\nyan\";Beijing;99\ndabao;Beijing;98\n";
+        writeCsvFile(mini.getFs(), "/user/test/input1.csv", content, "UTF-8");
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/input1.csv").toString();
+  
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.format.setValue(SimpleFileIOFormat.CSV);
+        props.path.setValue(fileSpec);
+        props.textEnclosureCharacter.setValue("\"");
+  
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+  
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+  
+            @Override
+            public void accept(IndexedRecord ir) {
+                assertThat(ir.getSchema().getFields(), hasSize(3));
+                actual.add(ir);
+            }
+        });
+  
+        assertThat(actual, hasSize(3));
+    }
+    
+    @Test
+    public void testGetSampleCsv_escape() throws Exception {
+        String content = "wang\\;wei;Beijing;100\ngaoyan;Beijing;99\ndabao;Beijing;98\n";
+        writeCsvFile(mini.getFs(), "/user/test/input6.csv", content, "UTF-8");
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/input6.csv").toString();
+  
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.format.setValue(SimpleFileIOFormat.CSV);
+        props.path.setValue(fileSpec);
+        props.escapeCharacter.setValue("\\");
+  
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+  
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+  
+            @Override
+            public void accept(IndexedRecord ir) {
+                assertThat(ir.getSchema().getFields(), hasSize(3));
+                actual.add(ir);
+            }
+        });
+  
+        assertThat(actual, hasSize(3));
+    }
+    
+    @Test
+    public void testGetSampleCsv_textEnclosureAndEscape() throws Exception {
+        String content = "\"wa\\\"ng;wei\";Bei\\\"jing;100\n\"gao\nyan\";Bei\\\"jing;99\ndabao;Bei\\\"jing;98\n";
+        writeCsvFile(mini.getFs(), "/user/test/input7.csv", content, "UTF-8");
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/input7.csv").toString();
+  
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.format.setValue(SimpleFileIOFormat.CSV);
+        props.path.setValue(fileSpec);
+        props.textEnclosureCharacter.setValue("\"");
+        props.escapeCharacter.setValue("\\");
+  
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+  
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+  
+            @Override
+            public void accept(IndexedRecord ir) {
+                assertThat(ir.getSchema().getFields(), hasSize(3));
+                actual.add(ir);
+            }
+        });
+  
+        assertThat(actual, hasSize(3));
+    }
 
     @Test
     public void testGetSampleCsv_multipleSources() throws Exception {
         RecordSet rs1 = getSimpleTestData(0);
-        writeRandomCsvFile(mini.getFs(), "/user/test/input/part-00000", rs1);
+        writeRandomCsvFile(mini.getFs(), "/user/test/input/part-00000", rs1, "UTF-8");
         RecordSet rs2 = getSimpleTestData(100);
-        writeRandomCsvFile(mini.getFs(), "/user/test/input/part-00001", rs2);
+        writeRandomCsvFile(mini.getFs(), "/user/test/input/part-00001", rs2, "UTF-8");
         RecordSet rs3 = getSimpleTestData(100);
-        writeRandomCsvFile(mini.getFs(), "/user/test/input/part-00002", rs3);
+        writeRandomCsvFile(mini.getFs(), "/user/test/input/part-00002", rs3, "UTF-8");
         String fileSpec = mini.getFs().getUri().resolve("/user/test/input/").toString();
 
         // Configure the component.
