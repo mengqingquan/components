@@ -37,7 +37,8 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
 
     public Property<String> specificFieldDelimiter = PropertyFactory.newString("specificFieldDelimiter", ";");
     
-    public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class);
+    public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class).setValue(EncodingType.UTF8);
+    public Property<String> specificEncoding = PropertyFactory.newString("specificEncoding", "");
     public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", false);
     public Property<Integer> headerLine = PropertyFactory.newInteger("headerLine", 0);
     
@@ -66,7 +67,6 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     public void setupProperties() {
         super.setupProperties();
         format.setValue(SimpleFileIOFormat.CSV);
-        encoding.setValue(EncodingType.UTF8);
     }
 
     @Override
@@ -84,6 +84,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
         mainForm.addRow(textEnclosureCharacter);
         mainForm.addRow(escapeCharacter);
         mainForm.addRow(encoding);
+        mainForm.addColumn(specificEncoding);
         mainForm.addRow(setHeaderLine);
         mainForm.addColumn(headerLine);
         
@@ -108,6 +109,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
             form.getWidget(textEnclosureCharacter).setVisible(isCSV);
             form.getWidget(escapeCharacter).setVisible(isCSV);
             form.getWidget(encoding).setVisible(isCSV);
+            form.getWidget(specificEncoding).setVisible(isCSV && encoding.getValue().equals(EncodingType.OTHER));
             form.getWidget(setHeaderLine).setVisible(isCSV);
             form.getWidget(headerLine).setVisible(isCSV && setHeaderLine.getValue());
         }
@@ -180,8 +182,16 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
         }
     }
     
+    public void afterEncoding() {
+        refreshLayout(getForm(Form.MAIN));
+    }
+    
     public String getEncoding() {
-        return encoding.getValue().name();
+        if (EncodingType.OTHER.equals(encoding.getValue())) {
+            return specificEncoding.getValue();
+        } else {
+            return encoding.getValue().getEncoding();
+        }
     }
   
     public long getHeaderLine() {

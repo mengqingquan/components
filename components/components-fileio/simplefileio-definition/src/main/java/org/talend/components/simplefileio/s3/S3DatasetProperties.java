@@ -69,7 +69,8 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
 
     public Property<String> specificFieldDelimiter = PropertyFactory.newString("specificFieldDelimiter", ";");
     
-    public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class);
+    public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class).setValue(EncodingType.UTF8);
+    public Property<String> specificEncoding = PropertyFactory.newString("specificEncoding", "");
     public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", false);
     public Property<Integer> headerLine = PropertyFactory.newInteger("headerLine", 0);
     
@@ -100,7 +101,6 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public void setupProperties() {
         super.setupProperties();
         format.setValue(SimpleFileIOFormat.CSV);
-        encoding.setValue(EncodingType.UTF8);
     }
 
     @Override
@@ -117,17 +117,17 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         mainForm.addRow(encryptDataAtRest);
         mainForm.addRow(kmsForDataAtRest);
 
-        // File properties
+        //CSV properties
         mainForm.addRow(format);
         mainForm.addRow(recordDelimiter);
         mainForm.addRow(specificRecordDelimiter);
         mainForm.addRow(fieldDelimiter);
         mainForm.addRow(specificFieldDelimiter);
         
-        //CSV properties
         mainForm.addRow(textEnclosureCharacter);
         mainForm.addRow(escapeCharacter);
         mainForm.addRow(encoding);
+        mainForm.addColumn(specificEncoding);
         mainForm.addRow(setHeaderLine);
         mainForm.addColumn(headerLine);
         
@@ -166,6 +166,8 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             form.getWidget(textEnclosureCharacter).setVisible(isCSV);
             form.getWidget(escapeCharacter).setVisible(isCSV);
             form.getWidget(encoding).setVisible(isCSV);
+            form.getWidget(specificEncoding)
+                    .setVisible(isCSV && encoding.getValue().equals(EncodingType.OTHER));
             form.getWidget(setHeaderLine).setVisible(isCSV);
             form.getWidget(headerLine).setVisible(isCSV && setHeaderLine.getValue());
         }
@@ -229,10 +231,18 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public void afterFormat() {
         refreshLayout(getForm(Form.MAIN));
     }
+    
+    public void afterEncoding() {
+        refreshLayout(getForm(Form.MAIN));
+    }
 
     public String getEncoding() {
-        return encoding.getValue().name();
+      if (EncodingType.OTHER.equals(encoding.getValue())) {
+        return specificEncoding.getValue();
+    } else {
+        return encoding.getValue().getEncoding();
     }
+}
 
     public long getHeaderLine() {
       if(setHeaderLine.getValue()) {

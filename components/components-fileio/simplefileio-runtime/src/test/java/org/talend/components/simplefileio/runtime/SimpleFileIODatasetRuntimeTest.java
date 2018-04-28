@@ -180,7 +180,8 @@ public class SimpleFileIODatasetRuntimeTest {
         SimpleFileIODatasetProperties props = createDatasetProperties();
         props.format.setValue(SimpleFileIOFormat.CSV);
         props.path.setValue(fileSpec);
-        props.encoding.setValue(EncodingType.GBK);
+        props.encoding.setValue(EncodingType.OTHER);
+        props.specificEncoding.setValue("GBK");
 
         // Create the runtime.
         SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
@@ -209,7 +210,8 @@ public class SimpleFileIODatasetRuntimeTest {
         SimpleFileIODatasetProperties props = createDatasetProperties();
         props.format.setValue(SimpleFileIOFormat.CSV);
         props.path.setValue(fileSpec);
-        props.encoding.setValue(EncodingType.GBK);
+        props.encoding.setValue(EncodingType.OTHER);
+        props.specificEncoding.setValue("GBK");
         props.setHeaderLine.setValue(true);
         props.headerLine.setValue(1);
 

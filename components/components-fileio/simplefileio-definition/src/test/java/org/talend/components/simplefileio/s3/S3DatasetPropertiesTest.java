@@ -65,6 +65,7 @@ public class S3DatasetPropertiesTest {
         assertThat(properties.specificFieldDelimiter.getValue(), is(";"));
         
         assertThat(properties.encoding.getValue(), is(EncodingType.UTF8));
+        assertThat(properties.specificEncoding.getValue(), is(""));
         assertThat(properties.setHeaderLine.getValue(), is(false));
         assertThat(properties.headerLine.getValue(), is(0));
         assertThat(properties.textEnclosureCharacter.getValue(), is(""));
@@ -83,7 +84,7 @@ public class S3DatasetPropertiesTest {
         Form main = properties.getForm(Form.MAIN);
         assertThat(main, notNullValue());
 
-        assertThat(main.getWidgets(), hasSize(16));
+        assertThat(main.getWidgets(), hasSize(17));
 
         for (String field : ALL) {
             Widget w = main.getWidget(field);
@@ -124,6 +125,7 @@ public class S3DatasetPropertiesTest {
                 assertThat(main.getWidget("specificFieldDelimiter").isVisible(), is(false));
                 
                 assertThat(main.getWidget("encoding").isVisible(), is(true));
+                assertThat(main.getWidget("specificEncoding").isVisible(), is(false));
                 assertThat(main.getWidget("setHeaderLine").isVisible(), is(true));
                 assertThat(main.getWidget("headerLine").isVisible(), is(false));
                 assertThat(main.getWidget("textEnclosureCharacter").isVisible(), is(true));
@@ -132,6 +134,11 @@ public class S3DatasetPropertiesTest {
                 properties.setHeaderLine.setValue(true);
                 properties.afterSetHeaderLine();
                 assertThat(main.getWidget("headerLine").isVisible(), is(true));
+                
+                properties.encoding.setValue(EncodingType.OTHER);
+                properties.afterEncoding();
+                assertThat(main.getWidget("specificEncoding").isVisible(), is(true));
+                
                 break;
             case AVRO:
             case PARQUET:
@@ -139,6 +146,7 @@ public class S3DatasetPropertiesTest {
                 assertThat(main.getWidget("fieldDelimiter").isVisible(), is(false));
                 
                 assertThat(main.getWidget("encoding").isVisible(), is(false));
+                assertThat(main.getWidget("specificEncoding").isVisible(), is(false));
                 assertThat(main.getWidget("setHeaderLine").isVisible(), is(false));
                 assertThat(main.getWidget("headerLine").isVisible(), is(false));
                 assertThat(main.getWidget("textEnclosureCharacter").isVisible(), is(false));

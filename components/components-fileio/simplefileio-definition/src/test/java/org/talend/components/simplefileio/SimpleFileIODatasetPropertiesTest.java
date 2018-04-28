@@ -64,6 +64,7 @@ public class SimpleFileIODatasetPropertiesTest {
         assertThat(properties.specificFieldDelimiter.getValue(), is(";"));
         
         assertThat(properties.encoding.getValue(), is(EncodingType.UTF8));
+        assertThat(properties.specificEncoding.getValue(), is(""));
         assertThat(properties.setHeaderLine.getValue(), is(false));
         assertThat(properties.headerLine.getValue(), is(0));
         assertThat(properties.textEnclosureCharacter.getValue(), is(""));
@@ -83,7 +84,7 @@ public class SimpleFileIODatasetPropertiesTest {
 
         Form main = properties.getForm(Form.MAIN);
         assertThat(main, notNullValue());
-        assertThat(main.getWidgets(), hasSize(11));
+        assertThat(main.getWidgets(), hasSize(12));
 
         for (String field : ALL) {
             Widget w = main.getWidget(field);
@@ -121,6 +122,7 @@ public class SimpleFileIODatasetPropertiesTest {
                 assertThat(main.getWidget("specificFieldDelimiter").isVisible(), is(false));
                 
                 assertThat(main.getWidget("encoding").isVisible(), is(true));
+                assertThat(main.getWidget("specificEncoding").isVisible(), is(false));
                 assertThat(main.getWidget("setHeaderLine").isVisible(), is(true));
                 assertThat(main.getWidget("headerLine").isVisible(), is(false));
                 assertThat(main.getWidget("textEnclosureCharacter").isVisible(), is(true));
@@ -129,6 +131,11 @@ public class SimpleFileIODatasetPropertiesTest {
                 properties.setHeaderLine.setValue(true);
                 properties.afterSetHeaderLine();
                 assertThat(main.getWidget("headerLine").isVisible(), is(true));
+                
+                properties.encoding.setValue(EncodingType.OTHER);
+                properties.afterEncoding();
+                assertThat(main.getWidget("specificEncoding").isVisible(), is(true));
+                
                 break;
             case AVRO:
             case PARQUET:
@@ -136,6 +143,7 @@ public class SimpleFileIODatasetPropertiesTest {
                 assertThat(main.getWidget("fieldDelimiter").isVisible(), is(false));
                 
                 assertThat(main.getWidget("encoding").isVisible(), is(false));
+                assertThat(main.getWidget("specificEncoding").isVisible(), is(false));
                 assertThat(main.getWidget("setHeaderLine").isVisible(), is(false));
                 assertThat(main.getWidget("headerLine").isVisible(), is(false));
                 assertThat(main.getWidget("textEnclosureCharacter").isVisible(), is(false));
