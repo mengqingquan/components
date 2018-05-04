@@ -25,6 +25,8 @@ import java.util.Set;
 
 public class FieldSelectorProperties extends FixedConnectorsComponentProperties implements Serializable {
 
+    public static final int MAX_SELECTORS = 100;
+
     public PropertiesList<SelectorProperties> selectors =
             new PropertiesList<>("selectors", new PropertiesList.NestedPropertiesFactory<SelectorProperties>() {
 
@@ -59,6 +61,7 @@ public class FieldSelectorProperties extends FixedConnectorsComponentProperties 
     @Override
     public void setupLayout() {
         super.setupLayout();
+        selectors.setMaxItems(String.valueOf(MAX_SELECTORS));
         Form mainForm = new Form(this, Form.MAIN);
         mainForm.addRow(Widget.widget(selectors).setWidgetType(Widget.NESTED_PROPERTIES).setConfigurationValue(
                 Widget.NESTED_PROPERTIES_TYPE_OPTION, "selector"));
