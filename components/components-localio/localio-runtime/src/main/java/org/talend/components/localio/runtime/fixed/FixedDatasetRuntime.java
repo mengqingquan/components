@@ -108,8 +108,6 @@ public class FixedDatasetRuntime implements DatasetRuntime<FixedDatasetPropertie
             } catch (Exception e) {
                 throw LocalIOErrorCode.createCannotParseSchema(e, properties.schema.getValue());
             }
-        case PREDEFINED:
-            return PredefinedDatasets.getPredefinedSchema(properties.predefined.getValue());
         }
         throw LocalIOErrorCode.createCannotParseSchema(null, properties.schema.getValue());
     }
@@ -181,9 +179,6 @@ public class FixedDatasetRuntime implements DatasetRuntime<FixedDatasetPropertie
                 }
             }
             break;
-        case PREDEFINED:
-            PredefinedDatasets.getSample(values, properties, limit);
-
         }
         return values;
     }

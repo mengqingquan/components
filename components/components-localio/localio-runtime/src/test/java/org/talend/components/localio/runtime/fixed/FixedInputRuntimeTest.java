@@ -226,44 +226,4 @@ public class FixedInputRuntimeTest {
             assertThat(outputs, containsInAnyOrder(sample.toArray()));
         }
     }
-
-    @Test
-    public void testPredefinedNexmark() {
-        // The component properties to test.
-        FixedInputProperties props = createComponentProperties();
-        props.getDatasetProperties().format.setValue(FixedDatasetProperties.RecordFormat.PREDEFINED);
-        props.getDatasetProperties().predefined.setValue(FixedDatasetProperties.PredefinedType.NEXMARK);
-        props.repeat.setValue(2);
-        props.isStreaming.setValue(false);
-
-        FixedInputRuntime runtime = new FixedInputRuntime();
-        runtime.initialize(null, props);
-
-        PCollection<IndexedRecord> indexRecords = pipeline.apply(runtime);
-        try (DirectCollector<IndexedRecord> collector = DirectCollector.of()) {
-            indexRecords.apply(collector);
-
-            // Run the pipeline to fill the collectors.
-            pipeline.run().waitUntilFinish();
-
-            // Validate the contents of the collected outputs.
-            List<IndexedRecord> outputs = collector.getRecords();
-            assertThat(outputs, hasSize(2));
-            IndexedRecord r1 = outputs.get(0);
-            IndexedRecord r2 = outputs.get(1);
-
-            // Check the schema and contents.
-            assertThat(r1.getSchema().getFields(), hasSize(2));
-            assertThat(r1.getSchema().getFields().get(0).name(), is("type"));
-            assertThat(r1.getSchema().getFields().get(0).schema().getType(), is(Schema.Type.ENUM));
-            assertThat(r1.getSchema().getFields().get(1).name(), is("value"));
-            assertThat(r1.getSchema().getFields().get(1).schema().getType(), is(Schema.Type.UNION));
-            // assertThat(r1.get(0).toString(), is("1"));
-            // assertThat(r1.get(1).toString(), is("one"));
-            // assertThat(r2.getSchema(), is(r1.getSchema()));
-            // assertThat(r2.get(0).toString(), is("2"));
-            // assertThat(r2.get(1).toString(), is("two"));
-        }
-    }
-
 }

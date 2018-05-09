@@ -10,17 +10,13 @@
 // 9 rue Pages 92150 Suresnes, France
 //
 // ============================================================================
-package org.talend.components.localio.runtime.fixed;
-
-import java.util.List;
+package org.talend.components.localio.runtime.benchmark;
 
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericEnumSymbol;
 import org.apache.avro.generic.IndexedRecord;
-import org.apache.beam.runners.direct.DirectOptions;
-import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.Read;
 import org.apache.beam.sdk.nexmark.NexmarkConfiguration;
 import org.apache.beam.sdk.nexmark.model.Auction;
@@ -35,103 +31,63 @@ import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Instant;
-import org.talend.components.adapter.beam.BeamLocalRunnerOption;
 import org.talend.components.adapter.beam.coders.LazyAvroCoder;
-import org.talend.components.adapter.beam.transform.DirectConsumerCollector;
-import org.talend.components.localio.LocalIOErrorCode;
-import org.talend.components.localio.fixed.FixedDatasetProperties;
-import org.talend.components.localio.fixed.FixedDatasetProperties.PredefinedType;
-import org.talend.components.localio.fixed.FixedInputProperties;
-import org.talend.daikon.exception.TalendRuntimeException;
-import org.talend.daikon.java8.Consumer;
+import org.talend.components.localio.benchmark.BenchmarkInputProperties;
 
-public class PredefinedDatasets {
+/**
+ * The record types and basic configuration of the Nexmark generator.
+ */
+public class NexmarkGenerator {
 
     /**
      * All events will be given a timestamp relative to this time (ms since epoch).
      */
     private static final long BASE_TIME = Instant.parse("2015-07-15T00:00:00.000Z").getMillis();
 
-    public static Schema getPredefinedSchema(PredefinedType value) {
-        switch (value) {
-        case NEXMARK:
-            return EventIndexedRecord.SCHEMA;
+    public static PCollection<IndexedRecord> expand(PBegin begin, BenchmarkInputProperties properties) {
+        // Use the "reasonable defaults" directly from the options.
+        NexmarkConfiguration config = new NexmarkConfiguration();
+        config.numEventGenerators = 1;
+        if (properties.isStreaming.getValue()) {
+            config.isRateLimited = true;
+            config.numEvents = 0;
+        } else {
+            config.numEvents = properties.maxNumRecords.getValue();
         }
-        throw LocalIOErrorCode.createCannotParseSchema(null, value.name());
-    }
-
-    public static PCollection<IndexedRecord> getSourceCollection(PBegin begin, FixedInputProperties properties) {
-        boolean isStreaming = properties.isStreaming.getValue();
-        switch (properties.getDatasetProperties().predefined.getValue()) {
-        case NEXMARK:
-            // Use the "reasonable defaults" directly from the options.
-            NexmarkConfiguration config = new NexmarkConfiguration();
-            config.numEventGenerators = 1;
-            if (isStreaming) {
-                config.isRateLimited = true;
-            } else {
-                config.numEvents = properties.repeat.getValue();
-            }
-            GeneratorConfig genConfig = new GeneratorConfig(config, //
-                    config.useWallclockEventTime ? System.currentTimeMillis() : BASE_TIME, //
-                    0L, config.numEvents, 0L);
-
-            PCollection<Event> from;
-            if (isStreaming) {
-                from = begin.apply("NEXMark.unbounded", Read.from(new UnboundedEventSource(genConfig, config.numEventGenerators,
-                        config.watermarkHoldbackSec, config.isRateLimited)));
-            } else {
-                from = begin.apply("NEXMark.bounded", Read.from(new BoundedEventSource(genConfig, config.numEventGenerators)));
-            }
-            // from = from.apply("NEXMark.filterBids", Filter.by(IS_BID));
-
-            return from.apply("NEXMark.mapToAvro", MapElements.via(new SimpleFunction<Event, IndexedRecord>() {
-
-                public EventIndexedRecord apply(Event e) {
-                    return new EventIndexedRecord(e);
-                }
-            })).setCoder(LazyAvroCoder.of());
-
+        if (properties.useMaxNumRecords.getValue()) {
+            config.numEvents = properties.maxNumRecords.getValue().intValue();
         }
-        throw LocalIOErrorCode.createCannotParseSchema(null, properties.getDatasetProperties().predefined.getValue().name());
-    }
-
-    public static void getSample(final List<IndexedRecord> values, FixedDatasetProperties properties, int limit) {
-
-        DirectOptions options = BeamLocalRunnerOption.getOptions();
-        final Pipeline p = Pipeline.create(options);
-
-        FixedInputProperties inputProperties = new FixedInputProperties(null);
-        inputProperties.setDatasetProperties(properties);
-        inputProperties.init();
-
-        inputProperties.isStreaming.setValue(false);
-        inputProperties.repeat.setValue(limit);
-
-        try (DirectConsumerCollector<IndexedRecord> collector = DirectConsumerCollector.of(new Consumer<IndexedRecord>() {
-
-            @Override
-            public void accept(IndexedRecord r) {
-                values.add(r);
-            }
-        })) {
-            // Collect a sample of the input records.
-            getSourceCollection(p.begin(), inputProperties).apply(collector);
-            try {
-                p.run().waitUntilFinish();
-            } catch (Pipeline.PipelineExecutionException e) {
-                if (e.getCause() instanceof TalendRuntimeException)
-                    throw (TalendRuntimeException) e.getCause();
-                throw e;
-            }
+        if (properties.useMaxReadTime.getValue()) {
+            config.streamTimeout = properties.maxReadTime.getValue().intValue() / 1000;
         }
 
+        GeneratorConfig genConfig = new GeneratorConfig(config, //
+                config.useWallclockEventTime ? System.currentTimeMillis() : BASE_TIME, //
+                0L, config.numEvents,
+                // The firstEventNumber is the seed for NEXMark generators.
+                properties.useSeed.getValue() ? properties.seed.getValue() : System.currentTimeMillis());
+
+        PCollection<Event> from;
+        if (properties.isStreaming.getValue()) {
+            from = begin.apply("NEXMark.unbounded", Read.from(new UnboundedEventSource(genConfig, config.numEventGenerators,
+                    config.watermarkHoldbackSec, config.isRateLimited)));
+        } else {
+            from = begin.apply("NEXMark.bounded", Read.from(new BoundedEventSource(genConfig, config.numEventGenerators)));
+        }
+        // from = from.apply("NEXMark.filterBids", Filter.by(IS_BID));
+
+        return from.apply("NEXMark.mapToAvro", MapElements.via(new SimpleFunction<Event, IndexedRecord>() {
+
+            public NexmarkGenerator.EventIndexedRecord apply(Event e) {
+                return new NexmarkGenerator.EventIndexedRecord(e);
+            }
+        })).setCoder(LazyAvroCoder.of());
     }
 
     /**
      * Internal {@link IndexedRecord} representation of a {@link Auction}.
      */
-    private static class AuctionIndexedRecord implements IndexedRecord {
+    public static class AuctionIndexedRecord implements IndexedRecord {
 
         public static Schema SCHEMA = SchemaBuilder.record("Auction").namespace("org.talend.datastreams.nexmark").fields() //
                 .requiredLong("id") //
@@ -192,7 +148,7 @@ public class PredefinedDatasets {
     /**
      * Internal {@link IndexedRecord} representation of a {@link Bid}.
      */
-    private static class BidIndexedRecord implements IndexedRecord {
+    public static class BidIndexedRecord implements IndexedRecord {
 
         public static Schema SCHEMA = SchemaBuilder.record("Bid").namespace("org.talend.datastreams.nexmark").fields() //
                 .requiredLong("auction") //
@@ -238,7 +194,7 @@ public class PredefinedDatasets {
     /**
      * Internal {@link IndexedRecord} representation of a {@link Person}.
      */
-    private static class PersonIndexedRecord implements IndexedRecord {
+    public static class PersonIndexedRecord implements IndexedRecord {
 
         public static Schema SCHEMA = SchemaBuilder.record("Person").namespace("org.talend.datastreams.nexmark").fields() //
                 .requiredLong("id") //
@@ -293,7 +249,7 @@ public class PredefinedDatasets {
     /**
      * Internal {@link IndexedRecord} representation of a {@link Bid}.
      */
-    private static class EventIndexedRecord implements IndexedRecord {
+    public static class EventIndexedRecord implements IndexedRecord {
 
         public static Schema SCHEMA = SchemaBuilder.record("Event").namespace("org.talend.datastreams.nexmark").fields() //
                 .name("auction").type(Schema.createUnion(Schema.create(Schema.Type.NULL), AuctionIndexedRecord.SCHEMA))
@@ -339,10 +295,10 @@ public class PredefinedDatasets {
     }
 
     /**
-     * Internal {@link IndexedRecord} representation of a {@link Bid} as a union of records.  The extra enum is
+     * Internal {@link IndexedRecord} representation of a {@link Bid} as a union of records. The extra enum is
      * not technically useful, except for easy filtering.
      */
-    private static class EventIndexedRecord2 implements IndexedRecord {
+    public static class EventIndexedRecord2 implements IndexedRecord {
 
         public static Schema TYPE_SCHEMA = SchemaBuilder.enumeration("EventType").namespace("org.talend.datastreams.nexmark")
                 .symbols("auction", "bid", "person");

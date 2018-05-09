@@ -15,12 +15,14 @@ package org.talend.components.localio;
 import org.talend.components.api.AbstractComponentFamilyDefinition;
 import org.talend.components.api.ComponentInstaller;
 import org.talend.components.api.Constants;
+import org.talend.components.localio.benchmark.BenchmarkDatasetDefinition;
+import org.talend.components.localio.benchmark.BenchmarkDatastoreDefinition;
+import org.talend.components.localio.benchmark.BenchmarkInputDefinition;
 import org.talend.components.localio.devnull.DevNullOutputDefinition;
 import org.talend.components.localio.fixed.FixedDatasetDefinition;
 import org.talend.components.localio.fixed.FixedDatastoreDefinition;
 import org.talend.components.localio.fixed.FixedInputDefinition;
 import org.talend.components.localio.fixedflowinput.FixedFlowInputDefinition;
-import org.talend.components.localio.rowgenerator.RowGeneratorDefinition;
 
 import com.google.auto.service.AutoService;
 
@@ -43,9 +45,9 @@ public class LocalIOComponentFamilyDefinition extends AbstractComponentFamilyDef
     public static final String MAVEN_DEFAULT_RUNTIME_URI = "mvn:" + MAVEN_GROUP_ID + "/" + MAVEN_DEFAULT_RUNTIME_ARTIFACT_ID;
 
     public LocalIOComponentFamilyDefinition() {
-        super(NAME,
-                new FixedDatastoreDefinition(), new FixedDatasetDefinition(), new FixedInputDefinition(), new DevNullOutputDefinition(),
-                new FixedFlowInputDefinition());
+        super(NAME, new BenchmarkDatastoreDefinition(), new BenchmarkDatasetDefinition(), new BenchmarkInputDefinition(),
+                new FixedDatastoreDefinition(), new FixedDatasetDefinition(), new FixedInputDefinition(),
+                new DevNullOutputDefinition(), new FixedFlowInputDefinition());
     }
 
     @Override
