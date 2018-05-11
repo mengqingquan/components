@@ -66,7 +66,7 @@ public class SimpleFileIODatasetPropertiesTest {
         assertThat(properties.encoding.getValue(), is(EncodingType.UTF8));
         assertThat(properties.specificEncoding.getValue(), is(""));
         assertThat(properties.setHeaderLine.getValue(), is(false));
-        assertThat(properties.headerLine.getValue(), is(0));
+        assertThat(properties.headerLine.getValue(), is(1));
         assertThat(properties.textEnclosureCharacter.getValue(), is(""));
         assertThat(properties.escapeCharacter.getValue(), is(""));
 
