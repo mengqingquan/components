@@ -49,11 +49,6 @@ public class S3DatasetRuntime implements IS3DatasetRuntime {
     @Override
     public Set<String> listBuckets() {
         AmazonS3 conn = S3Connection.createClient(properties.getDatastoreProperties());
-        String region = properties.region.getValue().getValue();
-        if (S3Region.OTHER.getValue().equals(region)) {
-            region = properties.unknownRegion.getValue();
-        }
-        conn.setEndpoint(regionToEndpoint(region));
         LOG.debug("Start to find buckets");
         List<Bucket> buckets = conn.listBuckets();
         Set<String> bucketsName = new HashSet<>();
@@ -64,7 +59,7 @@ public class S3DatasetRuntime implements IS3DatasetRuntime {
     }
 
     /**
-     * Some region has special endpoint
+     * Some region has special endpoint, TODO it's useful for future, so keep it though not used now
      * 
      * @param region
      * @return

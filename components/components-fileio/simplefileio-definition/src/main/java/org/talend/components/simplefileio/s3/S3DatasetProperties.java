@@ -148,8 +148,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         }
     }
 
-    public void afterRegion() {
-        refreshLayout(getForm(Form.MAIN));
+    public void afterDatastoreRef() {
         S3DatasetDefinition definition = new S3DatasetDefinition();
         RuntimeInfo runtimeInfo = definition.getRuntimeInfo(this);
         try (SandboxedInstance sandboxedInstance = RuntimeUtil.createRuntimeClass(runtimeInfo, getClass().getClassLoader())) {
@@ -159,6 +158,10 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         } catch (Exception e) {
             TalendRuntimeException.build(ComponentsErrorCode.IO_EXCEPTION, e).throwIt();
         }
+    }
+    
+    public void afterRegion() {
+        refreshLayout(getForm(Form.MAIN));
     }
 
     public void afterUnknownRegion() {
