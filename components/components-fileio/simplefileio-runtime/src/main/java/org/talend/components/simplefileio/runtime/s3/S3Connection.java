@@ -83,6 +83,11 @@ public class S3Connection {
     }
 
     public static void setS3Configuration(ExtraHadoopConfiguration conf, S3DatasetProperties properties) {
+        //TODO should set the region here :
+        //conf.set(Constants.ENDPOINT, "my_endpoint_from_dataset_properties");
+        //need to it?
+        //conf.set(Constants.ENDPOINT, "random");
+      
         if (properties.encryptDataAtRest.getValue()) {
             conf.set(Constants.SERVER_SIDE_ENCRYPTION_ALGORITHM, S3AEncryptionMethods.SSE_KMS.getMethod());
             conf.set(Constants.SERVER_SIDE_ENCRYPTION_KEY, properties.kmsForDataAtRest.getValue());
