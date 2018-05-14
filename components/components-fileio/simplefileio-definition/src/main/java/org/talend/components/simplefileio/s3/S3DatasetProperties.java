@@ -38,6 +38,10 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             S3DatastoreDefinition.NAME);
 
     // S3 Connectivity
+    public Property<S3Region> region = PropertyFactory.newEnum("region", S3Region.class).setValue(S3Region.DEFAULT).setRequired();
+
+    public Property<String> unknownRegion = PropertyFactory.newString("unknownRegion", "us-east-1").setRequired();
+
     public Property<String> bucket = PropertyFactory.newString("bucket").setRequired();
 
     public Property<String> object = PropertyFactory.newString("object").setRequired();
@@ -91,6 +95,8 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         super.setupLayout();
         Form mainForm = new Form(this, Form.MAIN);
         // S3
+        mainForm.addRow(region);
+        mainForm.addRow(unknownRegion);
         mainForm.addRow(Widget.widget(bucket).setWidgetType(Widget.DATALIST_WIDGET_TYPE));
         mainForm.addRow(object);
         if (ACTIVATE_DATA_IN_MOTION) {
@@ -114,6 +120,9 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         // Main properties
         if (form.getName().equals(Form.MAIN)) {
             // S3
+            form.getWidget(region.getName()).setVisible();
+            form.getWidget(unknownRegion.getName()).setVisible(S3Region.OTHER.equals(region.getValue()));
+
             form.getWidget(bucket.getName()).setVisible();
             form.getWidget(object.getName()).setVisible();
             if (ACTIVATE_DATA_IN_MOTION) {
@@ -138,8 +147,9 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
                     .setVisible(isCSV && fieldDelimiter.getValue().equals(FieldDelimiterType.OTHER));
         }
     }
-    
-    public void afterDatastoreRef() {
+
+    public void afterRegion() {
+        refreshLayout(getForm(Form.MAIN));
         S3DatasetDefinition definition = new S3DatasetDefinition();
         RuntimeInfo runtimeInfo = definition.getRuntimeInfo(this);
         try (SandboxedInstance sandboxedInstance = RuntimeUtil.createRuntimeClass(runtimeInfo, getClass().getClassLoader())) {
@@ -149,6 +159,10 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         } catch (Exception e) {
             TalendRuntimeException.build(ComponentsErrorCode.IO_EXCEPTION, e).throwIt();
         }
+    }
+
+    public void afterUnknownRegion() {
+        afterRegion();
     }
 
     public void afterEncryptDataInMotion() {
