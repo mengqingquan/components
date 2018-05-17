@@ -58,24 +58,6 @@ public class S3DatasetRuntime implements IS3DatasetRuntime {
         return bucketsName;
     }
 
-    /**
-     * Some region has special endpoint, TODO it's useful for future, so keep it though not used now
-     * 
-     * @param region
-     * @return
-     */
-    private String regionToEndpoint(String region) {
-        S3Region s3Region = S3Region.fromString(region);
-        if (s3Region != null) {
-            return s3Region.toEndpoint();
-        } else {
-            // TODO let the user provide endpoint,
-            // or we remove the custom region, and provide a configuration file can be loaded on fly, keep update
-            // also need to consider location to region mapping
-            return String.format("s3.dualstack.%s.amazonaws.com", region);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         // Simple schema container.
