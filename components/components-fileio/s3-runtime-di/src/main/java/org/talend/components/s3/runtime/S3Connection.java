@@ -23,8 +23,6 @@ import org.talend.components.simplefileio.s3.output.S3OutputProperties;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.internal.StaticCredentialsProvider;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3EncryptionClient;
@@ -40,15 +38,15 @@ public class S3Connection {
         com.amazonaws.auth.AWSCredentials credentials = new com.amazonaws.auth.BasicAWSCredentials(
                 data_store.accessKey.getValue(), data_store.secretKey.getValue());
 
-        Region region = RegionUtils.getRegion(data_set.region.getValue().getValue());
         Boolean clientSideEnc = data_set.encryptDataInMotion.getValue();
 
         AmazonS3 conn = null;
         if (clientSideEnc != null && clientSideEnc) {
+            //the code below is not called now
             String kms_cmk = data_set.kmsForDataInMotion.getValue();
             KMSEncryptionMaterialsProvider encryptionMaterialsProvider = new KMSEncryptionMaterialsProvider(kms_cmk);
             conn = new AmazonS3EncryptionClient(credentials, encryptionMaterialsProvider,
-                    new CryptoConfiguration().withAwsKmsRegion(region));
+                    new CryptoConfiguration()/*.withAwsKmsRegion(region)*/);
         } else {
             AWSCredentialsProvider basicCredentialsProvider = new StaticCredentialsProvider(credentials);
             conn = new AmazonS3Client(basicCredentialsProvider);

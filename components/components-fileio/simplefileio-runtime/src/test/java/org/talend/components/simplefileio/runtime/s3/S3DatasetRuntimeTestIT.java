@@ -61,7 +61,6 @@ public class S3DatasetRuntimeTestIT {
                 client.createBucket(String.format(bucketFormat, s3Region.getValue()), s3Region.getValue());
             }
 
-            s3DatasetProperties.region.setValue(s3Region);
             Set<String> bucketNames = runtime.listBuckets();
             assertTrue(bucketNames.size() > 0);
             assertThat(bucketNames, hasItems(String.format(bucketFormat, s3Region.getValue())));
@@ -108,7 +107,6 @@ public class S3DatasetRuntimeTestIT {
                 client.createBucket(bucketName, s3Region.getValue());
             }
 
-            s3DatasetProperties.region.setValue(null);
             s3DatasetProperties.bucket.setValue(bucketName);
             String endpointFromBucket = S3Connection.getEndpoint(s3DatasetProperties);
             

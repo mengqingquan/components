@@ -28,7 +28,6 @@ import org.talend.components.adapter.beam.BeamLocalRunnerOption;
 import org.talend.components.adapter.beam.transform.DirectConsumerCollector;
 import org.talend.components.api.container.RuntimeContainer;
 import org.talend.components.simplefileio.s3.S3DatasetProperties;
-import org.talend.components.simplefileio.s3.S3Region;
 import org.talend.components.simplefileio.s3.input.S3InputProperties;
 import org.talend.components.simplefileio.s3.runtime.IS3DatasetRuntime;
 import org.talend.daikon.java8.Consumer;
