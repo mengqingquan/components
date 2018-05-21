@@ -32,8 +32,13 @@ import org.talend.daikon.runtime.RuntimeInfo;
 import org.talend.daikon.runtime.RuntimeUtil;
 import org.talend.daikon.sandbox.SandboxedInstance;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class S3DatasetProperties extends PropertiesImpl implements DatasetProperties<S3DatastoreProperties> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3DatasetProperties.class);
+  
     public final transient ReferenceProperties<S3DatastoreProperties> datastoreRef = new ReferenceProperties<>("datastoreRef",
             S3DatastoreDefinition.NAME);
 
@@ -78,6 +83,8 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     @Override
     public void setDatastoreProperties(S3DatastoreProperties datastoreProperties) {
         datastoreRef.setReference(datastoreProperties);
+        //TODO should not call here, any reason? now it's necessary, if not, the trigger method don't work.
+        afterDatastoreRef();
     }
 
     @Override
@@ -147,7 +154,10 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             runtime.initialize(null, this);
             this.bucket.setPossibleValues(new ArrayList<String>(runtime.listBuckets()));
         } catch (Exception e) {
-            TalendRuntimeException.build(ComponentsErrorCode.IO_EXCEPTION, e).throwIt();
+            //TalendRuntimeException.build(ComponentsErrorCode.IO_EXCEPTION, e).throwIt();
+            //ignore the exception here, as the trigger method should not block to save the data set properties action. 
+            //And as the current after data store trigger method is called at some strange place, the exception should not break something.
+            LOGGER.warn(e.getClass() + " : " + e.getMessage());
         }
     }
     
