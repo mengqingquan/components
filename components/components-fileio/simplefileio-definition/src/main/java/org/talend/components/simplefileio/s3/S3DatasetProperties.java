@@ -147,6 +147,10 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     }
 
     public void afterDatastoreRef() {
+        //the current method is called at some strange place, need to skip it if bucket list have been set
+        if(!this.bucket.getPossibleValues().isEmpty()) {
+            return;
+        }
         S3DatasetDefinition definition = new S3DatasetDefinition();
         RuntimeInfo runtimeInfo = definition.getRuntimeInfo(this);
         try (SandboxedInstance sandboxedInstance = RuntimeUtil.createRuntimeClass(runtimeInfo, getClass().getClassLoader())) {
