@@ -15,14 +15,14 @@ package org.talend.components.simplefileio.s3;
 
 import java.util.ArrayList;
 
-import org.talend.components.api.exception.error.ComponentsErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.talend.components.common.dataset.DatasetProperties;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.FieldDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.RecordDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIOFormat;
 import org.talend.components.simplefileio.local.EncodingType;
 import org.talend.components.simplefileio.s3.runtime.IS3DatasetRuntime;
-import org.talend.daikon.exception.TalendRuntimeException;
 import org.talend.daikon.properties.PropertiesImpl;
 import org.talend.daikon.properties.ReferenceProperties;
 import org.talend.daikon.properties.presentation.Form;
@@ -32,9 +32,6 @@ import org.talend.daikon.properties.property.PropertyFactory;
 import org.talend.daikon.runtime.RuntimeInfo;
 import org.talend.daikon.runtime.RuntimeUtil;
 import org.talend.daikon.sandbox.SandboxedInstance;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class S3DatasetProperties extends PropertiesImpl implements DatasetProperties<S3DatastoreProperties> {
 
@@ -69,6 +66,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
 
     public Property<String> specificFieldDelimiter = PropertyFactory.newString("specificFieldDelimiter", ";");
     
+    //CSV and Excel both properties
     public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class).setValue(EncodingType.UTF8);
     public Property<String> specificEncoding = PropertyFactory.newString("specificEncoding", "");
     public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", false);
@@ -78,6 +76,12 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public Property<String> textEnclosureCharacter = PropertyFactory.newString("textEnclosureCharacter", "");
     public Property<String> escapeCharacter = PropertyFactory.newString("escapeCharacter", "");
 
+    //Excel propertiess
+    public Property<String> sheet = PropertyFactory.newString("sheet");
+    public Property<Boolean> setFooterLine = PropertyFactory.newBoolean("setFooterLine", false);
+    //not set the default value, TODO check if it works like expected
+    public Property<Integer> footerLine = PropertyFactory.newInteger("footerLine");
+    
     // TODO: If data-in-motion can be activated in the future, remove this flag.
     public static final boolean ACTIVATE_DATA_IN_MOTION = false;
 
@@ -117,21 +121,28 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         mainForm.addRow(encryptDataAtRest);
         mainForm.addRow(kmsForDataAtRest);
 
-        //CSV properties
         mainForm.addRow(format);
+        
+        //CSV only properties
         mainForm.addRow(recordDelimiter);
         mainForm.addRow(specificRecordDelimiter);
         mainForm.addRow(fieldDelimiter);
         mainForm.addRow(specificFieldDelimiter);
-        
         mainForm.addRow(textEnclosureCharacter);
         mainForm.addRow(escapeCharacter);
+        
+        //Excel only properties
+        mainForm.addRow(sheet);
+        
+        //CSV and Excel both properties
         mainForm.addRow(encoding);
         mainForm.addColumn(specificEncoding);
         mainForm.addRow(setHeaderLine);
         mainForm.addColumn(headerLine);
         
-        //Excel TODO
+        //Excel only properties
+        mainForm.addColumn(setFooterLine);
+        mainForm.addColumn(footerLine);
     }
 
     @Override
@@ -165,11 +176,19 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             
             form.getWidget(textEnclosureCharacter).setVisible(isCSV);
             form.getWidget(escapeCharacter).setVisible(isCSV);
-            form.getWidget(encoding).setVisible(isCSV);
+            
+            boolean isExcel = format.getValue() == SimpleFileIOFormat.EXCEL;
+            form.getWidget(sheet).setVisible(isExcel);
+            
+            boolean isCSVOrExcel = isCSV || isExcel;
+            form.getWidget(encoding).setVisible(isCSVOrExcel);
             form.getWidget(specificEncoding)
-                    .setVisible(isCSV && encoding.getValue().equals(EncodingType.OTHER));
-            form.getWidget(setHeaderLine).setVisible(isCSV);
-            form.getWidget(headerLine).setVisible(isCSV && setHeaderLine.getValue());
+                    .setVisible(isCSVOrExcel && encoding.getValue().equals(EncodingType.OTHER));
+            form.getWidget(setHeaderLine).setVisible(isCSVOrExcel);
+            form.getWidget(headerLine).setVisible(isCSVOrExcel && setHeaderLine.getValue());
+            
+            form.getWidget(setFooterLine).setVisible(isExcel);
+            form.getWidget(footerLine).setVisible(isExcel && setFooterLine.getValue());
         }
     }
 
@@ -211,6 +230,10 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public void afterSetHeaderLine() {
         refreshLayout(getForm(Form.MAIN));
     }
+    
+    public void afterSetFooterLine() {
+        refreshLayout(getForm(Form.MAIN));
+    }
 
     public String getRecordDelimiter() {
         if (RecordDelimiterType.OTHER.equals(recordDelimiter.getValue())) {
@@ -247,6 +270,17 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public long getHeaderLine() {
       if(setHeaderLine.getValue()) {
           Integer value = headerLine.getValue();
+          if(value != null) { 
+              return Math.max(0l, value.longValue());
+          }
+      }
+      
+      return 0l;
+    }
+    
+    public long getFooterLine() {
+      if(setFooterLine.getValue()) {
+          Integer value = footerLine.getValue();
           if(value != null) { 
               return Math.max(0l, value.longValue());
           }
