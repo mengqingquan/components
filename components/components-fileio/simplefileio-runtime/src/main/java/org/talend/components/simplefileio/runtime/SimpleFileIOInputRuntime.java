@@ -22,6 +22,7 @@ import org.talend.components.simplefileio.SimpleFileIODatasetProperties;
 import org.talend.components.simplefileio.input.SimpleFileIOInputProperties;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
 import org.talend.components.simplefileio.runtime.ugi.UgiExceptionHandler;
+import org.talend.components.simplefileio.s3.S3DatasetProperties;
 import org.talend.daikon.properties.ValidationResult;
 
 public class SimpleFileIOInputRuntime extends PTransform<PBegin, PCollection<IndexedRecord>>
@@ -69,6 +70,11 @@ public class SimpleFileIOInputRuntime extends PTransform<PBegin, PCollection<Ind
 
         case PARQUET:
             rf = new SimpleRecordFormatParquetIO(doAs, path, overwrite, limit, mergeOutput);
+            break;
+            
+        case EXCEL:
+            SimpleFileIODatasetProperties ds = properties.getDatasetProperties();
+            rf = new SimpleRecordFormatExcelIO(doAs, path, overwrite, limit, mergeOutput, ds.getEncoding(), ds.getSheetName(), ds.getHeaderLine(), ds.getFooterLine());
             break;
         }
 

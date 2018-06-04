@@ -296,4 +296,12 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public String getTextEnclosureCharacter() {
       return textEnclosureCharacter.getValue();
     }
+    
+    public String getSheetName() {
+      String sheetName = this.sheet.getName();
+      if(sheetName == null || sheetName.isEmpty()) {
+        throw new RuntimeException("please set the sheet name, it's necessary");
+      }
+      return sheetName;
+    }
 }

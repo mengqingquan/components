@@ -31,11 +31,14 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, TextArrayWriteable
         SimpleFileIOAvroRegistry.get();
     }
 
-    private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, String encoding, ExtraHadoopConfiguration extraConfig,
+    private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, String encoding, String sheetName, long header, long footer, ExtraHadoopConfiguration extraConfig,
             SerializableSplit serializableSplit) {
         super(doAs, filepattern, ExcelFileInputFormat.class, Void.class, TextArrayWriteable.class, extraConfig, serializableSplit);
         ExtraHadoopConfiguration hadoop_config = getExtraHadoopConfiguration();
         hadoop_config.set(ExcelFileInputFormat.TALEND_ENCODING, encoding);
+        hadoop_config.set(ExcelFileInputFormat.TALEND_EXCEL_SHEET_NAME, sheetName);
+        hadoop_config.set(ExcelFileInputFormat.TALEND_HEADER, String.valueOf(header));
+        hadoop_config.set(ExcelFileInputFormat.TALEND_FOOTER, String.valueOf(footer));
     }
 
     private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, ExtraHadoopConfiguration extraConfig,
@@ -43,10 +46,12 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, TextArrayWriteable
         super(doAs, filepattern, ExcelFileInputFormat.class, Void.class, TextArrayWriteable.class, extraConfig, serializableSplit);
     }
 
-    public static ExcelHdfsFileSource of(UgiDoAs doAs, String filepattern, String encoding) {
-        return new ExcelHdfsFileSource(doAs, filepattern, encoding, new ExtraHadoopConfiguration(), null);
+    //call by client, used to set the ExtraHadoopConfiguration : extraConfig major
+    public static ExcelHdfsFileSource of(UgiDoAs doAs, String filepattern, String encoding, String sheetName, long header, long footer) {
+        return new ExcelHdfsFileSource(doAs, filepattern, encoding, sheetName, header, footer, new ExtraHadoopConfiguration(), null);
     }
 
+    //call back by framework only, we call construct to set the parameter in ExtraHadoopConfiguration : extraConfig object before it
     @Override
     protected ExcelHdfsFileSource createSourceForSplit(SerializableSplit serializableSplit) {
         ExcelHdfsFileSource source = new ExcelHdfsFileSource(doAs, filepattern, getExtraHadoopConfiguration(), serializableSplit);
@@ -54,6 +59,7 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, TextArrayWriteable
         return source;
     }
 
+    //call back by framework only
     @Override
     protected UgiFileReader createReaderForSplit(SerializableSplit serializableSplit) throws IOException {
         return new UgiFileReader(this);

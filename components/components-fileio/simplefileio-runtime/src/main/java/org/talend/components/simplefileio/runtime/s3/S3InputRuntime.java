@@ -77,7 +77,7 @@ public class S3InputRuntime extends PTransform<PBegin, PCollection<IndexedRecord
             
         case EXCEL:
             S3DatasetProperties ds = properties.getDatasetProperties();
-            rf = new SimpleRecordFormatExcelIO(doAs, path, overwrite, limit, mergeOutput, ds.getEncoding());
+            rf = new SimpleRecordFormatExcelIO(doAs, path, overwrite, limit, mergeOutput, ds.getEncoding(), ds.getSheetName(), ds.getHeaderLine(), ds.getFooterLine());
             break;
         }
 

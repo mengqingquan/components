@@ -45,6 +45,12 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     //advice not set them as default they break the split function for hadoop and beam
     public Property<String> textEnclosureCharacter = PropertyFactory.newString("textEnclosureCharacter", "");
     public Property<String> escapeCharacter = PropertyFactory.newString("escapeCharacter", "");
+    
+    //Excel propertiess
+    public Property<String> sheet = PropertyFactory.newString("sheet");
+    public Property<Boolean> setFooterLine = PropertyFactory.newBoolean("setFooterLine", false);
+    //not set the default value, TODO check if it works like expected
+    public Property<Integer> footerLine = PropertyFactory.newInteger("footerLine");
 
     public final transient ReferenceProperties<SimpleFileIODatastoreProperties> datastoreRef = new ReferenceProperties<>(
             "datastoreRef", SimpleFileIODatastoreDefinition.NAME);
@@ -75,20 +81,27 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
         Form mainForm = new Form(this, Form.MAIN);
         mainForm.addRow(path);
         mainForm.addRow(format);
+        
+        //CSV properties
         mainForm.addRow(recordDelimiter);
         mainForm.addRow(specificRecordDelimiter);
         mainForm.addRow(fieldDelimiter);
         mainForm.addRow(specificFieldDelimiter);
-        
-        //CSV properties
         mainForm.addRow(textEnclosureCharacter);
         mainForm.addRow(escapeCharacter);
+        
+        //Excel only properties
+        mainForm.addRow(sheet);
+        
+        //CSV and Excel both properties
         mainForm.addRow(encoding);
         mainForm.addColumn(specificEncoding);
         mainForm.addRow(setHeaderLine);
         mainForm.addColumn(headerLine);
         
-        //Excel TODO
+        //Excel only properties
+        mainForm.addColumn(setFooterLine);
+        mainForm.addColumn(footerLine);
     }
 
     @Override
@@ -108,10 +121,18 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
             
             form.getWidget(textEnclosureCharacter).setVisible(isCSV);
             form.getWidget(escapeCharacter).setVisible(isCSV);
-            form.getWidget(encoding).setVisible(isCSV);
-            form.getWidget(specificEncoding).setVisible(isCSV && encoding.getValue().equals(EncodingType.OTHER));
-            form.getWidget(setHeaderLine).setVisible(isCSV);
-            form.getWidget(headerLine).setVisible(isCSV && setHeaderLine.getValue());
+            
+            boolean isExcel = format.getValue() == SimpleFileIOFormat.EXCEL;
+            form.getWidget(sheet).setVisible(isExcel);
+            
+            boolean isCSVOrExcel = isCSV || isExcel;
+            form.getWidget(encoding).setVisible(isCSVOrExcel);
+            form.getWidget(specificEncoding).setVisible(isCSVOrExcel && encoding.getValue().equals(EncodingType.OTHER));
+            form.getWidget(setHeaderLine).setVisible(isCSVOrExcel);
+            form.getWidget(headerLine).setVisible(isCSVOrExcel && setHeaderLine.getValue());
+            
+            form.getWidget(setFooterLine).setVisible(isExcel);
+            form.getWidget(footerLine).setVisible(isExcel && setFooterLine.getValue());
         }
     }
 
@@ -124,6 +145,10 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     }
     
     public void afterSetHeaderLine() {
+        refreshLayout(getForm(Form.MAIN));
+    }
+    
+    public void afterSetFooterLine() {
         refreshLayout(getForm(Form.MAIN));
     }
 
@@ -195,14 +220,33 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     }
   
     public long getHeaderLine() {
-      if(setHeaderLine.getValue()) {
-          Integer value = headerLine.getValue();
-          if(value != null) { 
-              return Math.max(0l, value.longValue());
-          }
-      }
-      
-      return 0l;
+        if(setHeaderLine.getValue()) {
+            Integer value = headerLine.getValue();
+            if(value != null) { 
+                return Math.max(0l, value.longValue());
+            }
+        }
+        
+        return 0l;
+    }
+    
+    public long getFooterLine() {
+        if(setFooterLine.getValue()) {
+            Integer value = footerLine.getValue();
+            if(value != null) { 
+                return Math.max(0l, value.longValue());
+            }
+        }
+        
+        return 0l;
+    }
+    
+    public String getSheetName() {
+        String sheetName = this.sheet.getName();
+        if(sheetName == null || sheetName.isEmpty()) {
+          throw new RuntimeException("please set the sheet name, it's necessary");
+        }
+        return sheetName;
     }
   
     public String getEscapeCharacter() {

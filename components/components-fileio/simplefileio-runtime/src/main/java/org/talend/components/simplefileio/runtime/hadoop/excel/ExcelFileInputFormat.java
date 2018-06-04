@@ -13,14 +13,21 @@ public class ExcelFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.
 
   public static String TALEND_ENCODING = "talend_excel_encoding";
   
+  public static String TALEND_EXCEL_SHEET_NAME = "talend_excel_sheet_name";
+  
   public static String TALEND_HEADER = "talend_excel_header";
+  
+  public static String TALEND_FOOTER = "talend_excel_footer";
 
   private static final Log LOG = LogFactory.getLog(ExcelFileInputFormat.class);
 
   @Override
   public ExcelFileRecordReader createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException {
     String encoding = context.getConfiguration().get(TALEND_ENCODING);
-    return new ExcelFileRecordReader(encoding);
+    String sheet = context.getConfiguration().get(TALEND_EXCEL_SHEET_NAME);
+    long header = context.getConfiguration().getLong(TALEND_HEADER, 0l);
+    long footer = context.getConfiguration().getLong(TALEND_FOOTER, 0l);
+    return new ExcelFileRecordReader(encoding, sheet, header, footer);
   }
 
   @Override
