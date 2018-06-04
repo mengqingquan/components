@@ -91,7 +91,7 @@ public class SimpleFileIODatasetRuntimeTest {
 
     @Test
     public void testGetSchemaEmptyCsvFile() throws Exception {
-        writeRandomCsvFile(mini.getFs(), "/user/test/empty.csv", getEmptyTestData());
+        writeRandomCsvFile(mini.getFs(), "/user/test/empty.csv", getEmptyTestData(), "UTF-8");
         String fileSpec = mini.getFs().getUri().resolve("/user/test/empty.csv").toString();
 
         // Configure the component.
