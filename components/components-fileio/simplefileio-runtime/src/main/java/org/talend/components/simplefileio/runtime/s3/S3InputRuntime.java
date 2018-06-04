@@ -22,6 +22,7 @@ import org.talend.components.simplefileio.runtime.SimpleFileIOAvroRegistry;
 import org.talend.components.simplefileio.runtime.SimpleRecordFormatAvroIO;
 import org.talend.components.simplefileio.runtime.SimpleRecordFormatBase;
 import org.talend.components.simplefileio.runtime.SimpleRecordFormatCsvIO;
+import org.talend.components.simplefileio.runtime.SimpleRecordFormatExcelIO;
 import org.talend.components.simplefileio.runtime.SimpleRecordFormatParquetIO;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
 import org.talend.components.simplefileio.s3.S3DatasetProperties;
@@ -72,6 +73,11 @@ public class S3InputRuntime extends PTransform<PBegin, PCollection<IndexedRecord
 
         case PARQUET:
             rf = new SimpleRecordFormatParquetIO(doAs, path, overwrite, limit, mergeOutput);
+            break;
+            
+        case EXCEL:
+            S3DatasetProperties ds = properties.getDatasetProperties();
+            rf = new SimpleRecordFormatExcelIO(doAs, path, overwrite, limit, mergeOutput, ds.getEncoding());
             break;
         }
 
