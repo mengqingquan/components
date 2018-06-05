@@ -298,7 +298,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     }
     
     public String getSheetName() {
-      String sheetName = this.sheet.getName();
+      String sheetName = this.sheet.getValue();
       if(sheetName == null || sheetName.isEmpty()) {
         throw new RuntimeException("please set the sheet name, it's necessary");
       }

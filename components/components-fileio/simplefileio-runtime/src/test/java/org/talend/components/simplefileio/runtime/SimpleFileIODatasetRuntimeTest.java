@@ -22,11 +22,15 @@ import static org.talend.components.test.RecordSetUtil.writeCsvFile;
 import static org.talend.components.test.RecordSetUtil.writeRandomAvroFile;
 import static org.talend.components.test.RecordSetUtil.writeRandomCsvFile;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.IndexedRecord;
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.fs.Path;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
@@ -398,6 +402,165 @@ public class SimpleFileIODatasetRuntimeTest {
 
         // Check the expected values.
         assertThat(actual, (Matcher) equalTo(rs.getAllData()));
+    }
+    
+    @Test
+    public void testGetSampleExcel() throws Exception {
+        InputStream in = getClass().getResourceAsStream("basic.xlsx");
+        try (OutputStream inOnMinFS = mini.getFs().create(new Path("/user/test/basic.xlsx"))) {
+            inOnMinFS.write(IOUtils.toByteArray(in));
+        }
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/basic.xlsx").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.path.setValue(fileSpec);
+        props.format.setValue(SimpleFileIOFormat.EXCEL);
+        props.sheet.setValue("Sheet1");
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(3));
+    }
+    
+    @Test
+    public void testGetSampleExcel_header() throws Exception {
+        InputStream in = getClass().getResourceAsStream("basic.xlsx");
+        try (OutputStream inOnMinFS = mini.getFs().create(new Path("/user/test/basic.xlsx"))) {
+            inOnMinFS.write(IOUtils.toByteArray(in));
+        }
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/basic.xlsx").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.path.setValue(fileSpec);
+        props.format.setValue(SimpleFileIOFormat.EXCEL);
+        props.sheet.setValue("Sheet1");
+        props.setHeaderLine.setValue(true);
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(2));
+    }
+    
+    @Test
+    public void testGetSampleExcel_footer() throws Exception {
+        InputStream in = getClass().getResourceAsStream("basic.xlsx");
+        try (OutputStream inOnMinFS = mini.getFs().create(new Path("/user/test/basic.xlsx"))) {
+            inOnMinFS.write(IOUtils.toByteArray(in));
+        }
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/basic.xlsx").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.path.setValue(fileSpec);
+        props.format.setValue(SimpleFileIOFormat.EXCEL);
+        props.sheet.setValue("Sheet1");
+        props.setFooterLine.setValue(true);
+        props.footerLine.setValue(1);
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(2));
+    }
+    
+    @Test
+    public void testGetSampleExcel_header_footer() throws Exception {
+        InputStream in = getClass().getResourceAsStream("basic.xlsx");
+        try (OutputStream inOnMinFS = mini.getFs().create(new Path("/user/test/basic.xlsx"))) {
+            inOnMinFS.write(IOUtils.toByteArray(in));
+        }
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/basic.xlsx").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.path.setValue(fileSpec);
+        props.format.setValue(SimpleFileIOFormat.EXCEL);
+        props.sheet.setValue("Sheet1");
+        props.setHeaderLine.setValue(true);
+        props.setFooterLine.setValue(true);
+        props.footerLine.setValue(1);
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(1));
+    }
+    
+    @Test(expected = RuntimeException.class)
+    public void testGetSampleExcel_sheet_not_exist() throws Exception {
+        InputStream in = getClass().getResourceAsStream("basic.xlsx");
+        try (OutputStream inOnMinFS = mini.getFs().create(new Path("/user/test/basic.xlsx"))) {
+            inOnMinFS.write(IOUtils.toByteArray(in));
+        }
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/basic.xlsx").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.path.setValue(fileSpec);
+        props.format.setValue(SimpleFileIOFormat.EXCEL);
+        props.sheet.setValue("not_exist");
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
     }
 
 }

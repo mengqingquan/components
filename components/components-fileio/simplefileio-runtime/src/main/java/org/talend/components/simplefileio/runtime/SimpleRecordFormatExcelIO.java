@@ -24,7 +24,7 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.talend.components.simplefileio.runtime.hadoop.excel.TextArrayWriteable;
 import org.talend.components.simplefileio.runtime.sources.ExcelHdfsFileSource;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
@@ -77,9 +77,9 @@ public class SimpleRecordFormatExcelIO extends SimpleRecordFormatBase {
             }
             //TODO not good here
             TextArrayWriteable ta = c.element();
-            Text[] columns = (Text[])ta.get();
+            Writable[] columns = (Writable[])ta.get();
             List<String> list = new ArrayList<String>();
-            for(Text column : columns) {
+            for(Writable column : columns) {
               list.add(column.toString());
             }
             String[] input = list.toArray(new String[0]);
