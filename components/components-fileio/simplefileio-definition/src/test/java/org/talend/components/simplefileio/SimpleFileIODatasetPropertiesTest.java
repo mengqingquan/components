@@ -20,6 +20,7 @@ import static org.junit.Assert.assertThat;
 
 import java.util.Arrays;
 
+import org.hamcrest.core.IsNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.FieldDelimiterType;
@@ -69,6 +70,10 @@ public class SimpleFileIODatasetPropertiesTest {
         assertThat(properties.headerLine.getValue(), is(1));
         assertThat(properties.textEnclosureCharacter.getValue(), is(""));
         assertThat(properties.escapeCharacter.getValue(), is(""));
+        
+        assertThat(properties.sheet.getValue(), is(""));
+        assertThat(properties.setFooterLine.getValue(), is(false));
+        assertThat(properties.footerLine.getValue(), is(IsNull.nullValue()));
 
         properties.getDatastoreProperties().userName.setValue("ryan");
         String x = JsonSchemaUtil.toJson(properties, Form.MAIN, SimpleFileIODatasetDefinition.NAME);
@@ -84,7 +89,7 @@ public class SimpleFileIODatasetPropertiesTest {
 
         Form main = properties.getForm(Form.MAIN);
         assertThat(main, notNullValue());
-        assertThat(main.getWidgets(), hasSize(12));
+        assertThat(main.getWidgets(), hasSize(15));
 
         for (String field : ALL) {
             Widget w = main.getWidget(field);
@@ -149,6 +154,41 @@ public class SimpleFileIODatasetPropertiesTest {
                 assertThat(main.getWidget("textEnclosureCharacter").isVisible(), is(false));
                 assertThat(main.getWidget("escapeCharacter").isVisible(), is(false));
                 break;
+            case EXCEL:
+                //reset back as above CSV change it
+                properties.setHeaderLine.setValue(false);
+                properties.afterSetHeaderLine();
+                properties.encoding.setValue(EncodingType.UTF8);
+                properties.afterEncoding();
+              
+                assertThat(main.getWidget("recordDelimiter").isVisible(), is(false));
+                assertThat(main.getWidget("specificRecordDelimiter").isVisible(), is(false));
+                assertThat(main.getWidget("fieldDelimiter").isVisible(), is(false));
+                assertThat(main.getWidget("specificFieldDelimiter").isVisible(), is(false));
+                
+                assertThat(main.getWidget("encoding").isVisible(), is(true));
+                assertThat(main.getWidget("specificEncoding").isVisible(), is(false));
+                assertThat(main.getWidget("setHeaderLine").isVisible(), is(true));
+                assertThat(main.getWidget("headerLine").isVisible(), is(false));
+                assertThat(main.getWidget("textEnclosureCharacter").isVisible(), is(false));
+                assertThat(main.getWidget("escapeCharacter").isVisible(), is(false));
+                
+                assertThat(main.getWidget("sheet").isVisible(), is(true));
+                assertThat(main.getWidget("setFooterLine").isVisible(), is(true));
+                assertThat(main.getWidget("footerLine").isVisible(), is(false));
+                
+                properties.setHeaderLine.setValue(true);
+                properties.afterSetHeaderLine();
+                assertThat(main.getWidget("headerLine").isVisible(), is(true));
+                
+                properties.setFooterLine.setValue(true);
+                properties.afterSetFooterLine();
+                assertThat(main.getWidget("footerLine").isVisible(), is(true));
+                
+                properties.encoding.setValue(EncodingType.OTHER);
+                properties.afterEncoding();
+                assertThat(main.getWidget("specificEncoding").isVisible(), is(true));
+                break;
             default:
                 throw new RuntimeException("Missing test case for " + format);
             }
@@ -191,6 +231,8 @@ public class SimpleFileIODatasetPropertiesTest {
             case PARQUET:
                 assertThat(main.getWidget("recordDelimiter").isVisible(), is(false));
                 assertThat(main.getWidget("fieldDelimiter").isVisible(), is(false));
+                break;
+            case EXCEL:
                 break;
             default:
                 throw new RuntimeException("Missing test case for " + format);

@@ -47,7 +47,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     public Property<String> escapeCharacter = PropertyFactory.newString("escapeCharacter", "");
     
     //Excel propertiess
-    public Property<String> sheet = PropertyFactory.newString("sheet");
+    public Property<String> sheet = PropertyFactory.newString("sheet", "");
     public Property<Boolean> setFooterLine = PropertyFactory.newBoolean("setFooterLine", false);
     //not set the default value, TODO check if it works like expected
     public Property<Integer> footerLine = PropertyFactory.newInteger("footerLine");
