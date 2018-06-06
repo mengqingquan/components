@@ -405,6 +405,37 @@ public class SimpleFileIODatasetRuntimeTest {
     }
     
     @Test
+    public void testGetSampleExcel97() throws Exception {
+        InputStream in = getClass().getResourceAsStream("basic.xls");
+        try (OutputStream inOnMinFS = mini.getFs().create(new Path("/user/test/basic.xls"))) {
+            inOnMinFS.write(IOUtils.toByteArray(in));
+        }
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/basic.xls").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.path.setValue(fileSpec);
+        props.format.setValue(SimpleFileIOFormat.EXCEL);
+        props.sheet.setValue("Sheet1");
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(3));
+    }
+    
+    @Test
     public void testGetSampleExcel() throws Exception {
         InputStream in = getClass().getResourceAsStream("basic.xlsx");
         try (OutputStream inOnMinFS = mini.getFs().create(new Path("/user/test/basic.xlsx"))) {

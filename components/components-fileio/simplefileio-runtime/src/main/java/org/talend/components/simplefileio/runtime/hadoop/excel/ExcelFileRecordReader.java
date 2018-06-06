@@ -1,8 +1,8 @@
 package org.talend.components.simplefileio.runtime.hadoop.excel;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -10,26 +10,25 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
-import org.apache.hadoop.io.compress.CompressionInputStream;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.poi.ss.formula.eval.NumberEval;
+import org.apache.poi.EncryptedDocumentException;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 /**
  * https://github.com/apache/poi/tree/trunk/src/examples/src/org/apache/poi/xssf
@@ -41,7 +40,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable> {
   private static final Log LOG = LogFactory.getLog(ExcelFileRecordReader.class);
 
-  private XSSFWorkbook workbook;
+  private Workbook workbook;
+  
   private Sheet sheet;
 
   private TextArrayWriteable value;
@@ -57,8 +57,8 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
 
   private long currentRow;
   private long endRow;
-
-  private static DecimalFormat df = new DecimalFormat("#.####################################");
+  
+  private FormulaEvaluator formulaEvaluator;
 
   private Iterator<Row> rowIterator;
 
@@ -79,14 +79,17 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
     final Path file = split.getPath();
 
     final FileSystem fs = file.getFileSystem(job);
-    FSDataInputStream fileIn = fs.open(file);
+    InputStream in = fs.open(file);
 
     CompressionCodec codec = new CompressionCodecFactory(job).getCodec(file);
     if (null != codec) {
-      CompressionInputStream cis = codec.createInputStream(fileIn, decompressor);
-      workbook = new XSSFWorkbook(cis);
-    } else {
-      workbook = new XSSFWorkbook(fileIn);
+      in = codec.createInputStream(in, decompressor);
+    }
+    
+    try {
+      workbook = WorkbookFactory.create(in);
+    } catch (EncryptedDocumentException | InvalidFormatException e) {
+      throw new RuntimeException("failed to create workbook object : " + e.getMessage());
     }
 
     for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
@@ -99,6 +102,8 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
     if (sheet == null) {
       throw new RuntimeException("can't find the sheet : " + sheetName);
     }
+    
+    formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
 
     endRow = sheet.getLastRowNum() + 1 - footer;
 
@@ -131,48 +136,8 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
     List<Text> list = new ArrayList<Text>();
 
     for (Cell cell : row) {
-      String content = "";// TODO check if can set null
-      CellType type = cell.getCellTypeEnum();
-      switch (type) {
-      case STRING:
-        content = cell.getRichStringCellValue().getString();
-        break;
-      case NUMERIC:
-        if (DateUtil.isCellDateFormatted(cell)) {
-          content = cell.getDateCellValue().toString();
-        } else {
-          content = df.format(cell.getNumericCellValue());
-        }
-        break;
-      case BOOLEAN:
-        content = String.valueOf(cell.getBooleanCellValue());
-        break;
-      case FORMULA:
-        CellType ct = cell.getCachedFormulaResultTypeEnum();
-        switch (ct) {
-        case STRING:
-          content = cell.getRichStringCellValue().getString();
-          break;
-        case NUMERIC:
-          if (DateUtil.isCellDateFormatted(cell)) {
-            content = cell.getDateCellValue().toString();
-          } else {
-            content = new NumberEval(cell.getNumericCellValue()).getStringValue();
-          }
-          break;
-        case BOOLEAN:
-          content = String.valueOf(cell.getBooleanCellValue());
-          break;
-        default:
-          break;
-        }
-        break;
-      default:
-        break;
-      }
-
-      Text text = new Text();
-      text.set(content);
+      String content = ExcelUtils.getCellValueAsString(cell, formulaEvaluator);
+      Text text = new Text(content);
       list.add(text);
     }
 
