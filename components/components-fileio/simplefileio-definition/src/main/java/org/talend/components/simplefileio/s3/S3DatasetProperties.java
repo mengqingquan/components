@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.talend.components.common.dataset.DatasetProperties;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.FieldDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.RecordDelimiterType;
+import org.talend.components.simplefileio.ExcelFormat;
 import org.talend.components.simplefileio.SimpleFileIOFormat;
 import org.talend.components.simplefileio.local.EncodingType;
 import org.talend.components.simplefileio.s3.runtime.IS3DatasetRuntime;
@@ -77,6 +78,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public Property<String> escapeCharacter = PropertyFactory.newString("escapeCharacter", "");
 
     //Excel propertiess
+    public Property<ExcelFormat> excelFormat = PropertyFactory.newEnum("excelFormat", ExcelFormat.class);
     public Property<String> sheet = PropertyFactory.newString("sheet", "");
     public Property<Boolean> setFooterLine = PropertyFactory.newBoolean("setFooterLine", false);
     //not set the default value, TODO check if it works like expected
@@ -105,6 +107,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     public void setupProperties() {
         super.setupProperties();
         format.setValue(SimpleFileIOFormat.CSV);
+        excelFormat.setValue(ExcelFormat.EXCEL2007);
     }
 
     @Override
@@ -132,6 +135,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
         mainForm.addRow(escapeCharacter);
         
         //Excel only properties
+        mainForm.addRow(excelFormat);
         mainForm.addRow(sheet);
         
         //CSV and Excel both properties
@@ -178,7 +182,9 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             form.getWidget(escapeCharacter).setVisible(isCSV);
             
             boolean isExcel = format.getValue() == SimpleFileIOFormat.EXCEL;
-            form.getWidget(sheet).setVisible(isExcel);
+            form.getWidget(excelFormat).setVisible(isExcel);
+            //html format no sheet setting
+            form.getWidget(sheet).setVisible(isExcel && (excelFormat.getValue() != ExcelFormat.HTML));
             
             boolean isCSVOrExcel = isCSV || isExcel;
             form.getWidget(encoding).setVisible(isCSVOrExcel);
@@ -260,48 +266,52 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     }
 
     public String getEncoding() {
-      if (EncodingType.OTHER.equals(encoding.getValue())) {
-        return specificEncoding.getValue();
-    } else {
-        return encoding.getValue().getEncoding();
+        if (EncodingType.OTHER.equals(encoding.getValue())) {
+            return specificEncoding.getValue();
+        } else {
+            return encoding.getValue().getEncoding();
+        }
     }
-}
 
     public long getHeaderLine() {
-      if(setHeaderLine.getValue()) {
-          Integer value = headerLine.getValue();
-          if(value != null) { 
-              return Math.max(0l, value.longValue());
-          }
-      }
-      
-      return 0l;
+        if(setHeaderLine.getValue()) {
+            Integer value = headerLine.getValue();
+            if(value != null) { 
+                return Math.max(0l, value.longValue());
+            }
+        }
+        
+        return 0l;
     }
     
     public long getFooterLine() {
-      if(setFooterLine.getValue()) {
-          Integer value = footerLine.getValue();
-          if(value != null) { 
-              return Math.max(0l, value.longValue());
-          }
-      }
-      
-      return 0l;
+        if(setFooterLine.getValue()) {
+            Integer value = footerLine.getValue();
+            if(value != null) { 
+                return Math.max(0l, value.longValue());
+            }
+        }
+        
+        return 0l;
     }
 
     public String getEscapeCharacter() {
-      return escapeCharacter.getValue();
+        return escapeCharacter.getValue();
     }
 
     public String getTextEnclosureCharacter() {
-      return textEnclosureCharacter.getValue();
+        return textEnclosureCharacter.getValue();
     }
     
     public String getSheetName() {
-      String sheetName = this.sheet.getValue();
-      if(sheetName == null || sheetName.isEmpty()) {
-        throw new RuntimeException("please set the sheet name, it's necessary");
-      }
-      return sheetName;
+        String sheetName = this.sheet.getValue();
+        if((excelFormat.getValue() != ExcelFormat.HTML) && (sheetName == null || sheetName.isEmpty())) {
+          throw new RuntimeException("please set the sheet name, it's necessary");
+        }
+        return sheetName;
+    }
+    
+    public ExcelFormat getExcelFormat() {
+        return excelFormat.getValue();
     }
 }

@@ -47,6 +47,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     public Property<String> escapeCharacter = PropertyFactory.newString("escapeCharacter", "");
     
     //Excel propertiess
+    public Property<ExcelFormat> excelFormat = PropertyFactory.newEnum("excelFormat", ExcelFormat.class);
     public Property<String> sheet = PropertyFactory.newString("sheet", "");
     public Property<Boolean> setFooterLine = PropertyFactory.newBoolean("setFooterLine", false);
     //not set the default value, TODO check if it works like expected
@@ -73,6 +74,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     public void setupProperties() {
         super.setupProperties();
         format.setValue(SimpleFileIOFormat.CSV);
+        excelFormat.setValue(ExcelFormat.EXCEL2007);
     }
 
     @Override
@@ -91,6 +93,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
         mainForm.addRow(escapeCharacter);
         
         //Excel only properties
+        mainForm.addRow(excelFormat);
         mainForm.addRow(sheet);
         
         //CSV and Excel both properties
@@ -123,7 +126,9 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
             form.getWidget(escapeCharacter).setVisible(isCSV);
             
             boolean isExcel = format.getValue() == SimpleFileIOFormat.EXCEL;
-            form.getWidget(sheet).setVisible(isExcel);
+            form.getWidget(excelFormat).setVisible(isExcel);
+            //html format no sheet setting
+            form.getWidget(sheet).setVisible(isExcel && (excelFormat.getValue() != ExcelFormat.HTML));
             
             boolean isCSVOrExcel = isCSV || isExcel;
             form.getWidget(encoding).setVisible(isCSVOrExcel);
@@ -243,17 +248,21 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     
     public String getSheetName() {
         String sheetName = this.sheet.getValue();
-        if(sheetName == null || sheetName.isEmpty()) {
+        if((excelFormat.getValue() != ExcelFormat.HTML) && (sheetName == null || sheetName.isEmpty())) {
           throw new RuntimeException("please set the sheet name, it's necessary");
         }
         return sheetName;
     }
+    
+    public ExcelFormat getExcelFormat() {
+        return excelFormat.getValue();
+    }
   
     public String getEscapeCharacter() {
-      return escapeCharacter.getValue();
+        return escapeCharacter.getValue();
     }
   
     public String getTextEnclosureCharacter() {
-      return textEnclosureCharacter.getValue();
+        return textEnclosureCharacter.getValue();
     }
 }

@@ -48,7 +48,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
 
   private Decompressor decompressor;
 
-  // TODO maybe remove the encoding for excel 2007 format as not used now
+  // TODO maybe remove the encoding for excel 2007 and 97 format as not used in the poi api
   private String encoding = "UTF-8";
 
   private String sheetName;
@@ -61,15 +61,20 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
   private FormulaEvaluator formulaEvaluator;
 
   private Iterator<Row> rowIterator;
+  
+  private boolean isHtml;
+  private List<List<String>> rows;
+  private Iterator<List<String>> htmlRowIterator;
 
   public ExcelFileRecordReader() {
   }
 
-  public ExcelFileRecordReader(String encoding, String sheet, long header, long footer) throws UnsupportedEncodingException {
+  public ExcelFileRecordReader(String encoding, String sheet, long header, long footer, String excelFormat) throws UnsupportedEncodingException {
     this.encoding = encoding;
     this.sheetName = sheet;
     this.header = header;
     this.footer = footer;
+    this.isHtml = "HTML".equals(excelFormat);
   }
 
   public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException {
@@ -86,6 +91,38 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
       in = codec.createInputStream(in, decompressor);
     }
     
+    if(isHtml) {
+      init4ExcelHtml(in);
+      return;
+    }
+    
+    init4Excel2007And97(in);
+  }
+
+  private void init4ExcelHtml(InputStream in) {
+    try {
+      rows = ExcelHtmlParser.getRows(in, this.encoding);
+    } finally {
+      try {
+        in.close();
+      } catch (IOException e) {
+        LOG.warn("Failed to close the stream : " + e);
+      }
+    }
+    
+    endRow = rows.size() - footer;
+    //for html format, the first line is always the schema show, we don't read it always now, so header 1 or 0 both mean skip the schema row only.
+    //TODO now we implement the header like "skip lines" which is clear name for the implement, need to consider what the header work for? for schema retrieve? or for skip lines only?
+    header = Math.max(1, header);
+    
+    htmlRowIterator = rows.iterator();
+    while ((header--) > 0 && htmlRowIterator.hasNext()) {
+      currentRow++;
+      htmlRowIterator.next();
+    }
+  }
+
+  private void init4Excel2007And97(InputStream in) throws IOException {
     try {
       workbook = WorkbookFactory.create(in);
     } catch (EncryptedDocumentException | InvalidFormatException e) {
@@ -113,18 +150,45 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
       currentRow++;
       rowIterator.next();
     }
-
   }
 
   public boolean nextKeyValue() throws IOException {
     if (value == null) {
       value = new TextArrayWriteable();
     }
-
+    
     if (currentRow >= endRow) {
       return false;
     }
+    
+    if(isHtml) {
+      return nextKeyValue4ExcelHtml();
+    }
+    return nextKeyValue4Excel2007And97();
+  }
+  
+  private boolean nextKeyValue4ExcelHtml() {
+    if (!htmlRowIterator.hasNext()) {
+      return false;
+    }
 
+    currentRow++;
+
+    List<String> row = htmlRowIterator.next();
+
+    List<Text> list = new ArrayList<Text>();
+
+    for (String column : row) {
+      Text text = new Text(column);
+      list.add(text);
+    }
+
+    Text[] contents = list.toArray(new Text[0]);
+    value.set(contents);
+    return true;
+  }
+
+  private boolean nextKeyValue4Excel2007And97() {
     if (!rowIterator.hasNext()) {
       return false;
     }

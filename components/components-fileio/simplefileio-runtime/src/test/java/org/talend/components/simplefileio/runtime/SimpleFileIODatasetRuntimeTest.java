@@ -35,6 +35,7 @@ import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.talend.components.common.dataset.DatasetDefinition;
+import org.talend.components.simplefileio.ExcelFormat;
 import org.talend.components.simplefileio.SimpleFileIODatasetDefinition;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties;
 import org.talend.components.simplefileio.SimpleFileIOFormat;
@@ -402,6 +403,37 @@ public class SimpleFileIODatasetRuntimeTest {
 
         // Check the expected values.
         assertThat(actual, (Matcher) equalTo(rs.getAllData()));
+    }
+    
+    @Test
+    public void testGetSampleExcelHtml() throws Exception {
+        InputStream in = getClass().getResourceAsStream("sales-force.html");
+        try (OutputStream inOnMinFS = mini.getFs().create(new Path("/user/test/sales-force.html"))) {
+            inOnMinFS.write(IOUtils.toByteArray(in));
+        }
+        String fileSpec = mini.getFs().getUri().resolve("/user/test/sales-force.html").toString();
+
+        // Configure the component.
+        SimpleFileIODatasetProperties props = createDatasetProperties();
+        props.path.setValue(fileSpec);
+        props.format.setValue(SimpleFileIOFormat.EXCEL);
+        props.excelFormat.setValue(ExcelFormat.HTML);
+
+        // Create the runtime.
+        SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
+        runtime.initialize(null, props);
+
+        // Attempt to get a sample using the runtime methods.
+        final List<IndexedRecord> actual = new ArrayList<>();
+        runtime.getSample(100, new Consumer<IndexedRecord>() {
+
+            @Override
+            public void accept(IndexedRecord ir) {
+                actual.add(ir);
+            }
+        });
+
+        assertThat(actual, hasSize(100));
     }
     
     @Test

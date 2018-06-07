@@ -89,7 +89,7 @@ public class SimpleFileIODatasetPropertiesTest {
 
         Form main = properties.getForm(Form.MAIN);
         assertThat(main, notNullValue());
-        assertThat(main.getWidgets(), hasSize(15));
+        assertThat(main.getWidgets(), hasSize(16));
 
         for (String field : ALL) {
             Widget w = main.getWidget(field);

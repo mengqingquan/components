@@ -31,7 +31,7 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, TextArrayWriteable
         SimpleFileIOAvroRegistry.get();
     }
 
-    private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, String encoding, String sheetName, long header, long footer, ExtraHadoopConfiguration extraConfig,
+    private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, String encoding, String sheetName, long header, long footer, String excelFormat, ExtraHadoopConfiguration extraConfig,
             SerializableSplit serializableSplit) {
         super(doAs, filepattern, ExcelFileInputFormat.class, Void.class, TextArrayWriteable.class, extraConfig, serializableSplit);
         ExtraHadoopConfiguration hadoop_config = getExtraHadoopConfiguration();
@@ -39,6 +39,7 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, TextArrayWriteable
         hadoop_config.set(ExcelFileInputFormat.TALEND_EXCEL_SHEET_NAME, sheetName);
         hadoop_config.set(ExcelFileInputFormat.TALEND_HEADER, String.valueOf(header));
         hadoop_config.set(ExcelFileInputFormat.TALEND_FOOTER, String.valueOf(footer));
+        hadoop_config.set(ExcelFileInputFormat.TALEND_EXCEL_FORMAT, excelFormat);
     }
 
     private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, ExtraHadoopConfiguration extraConfig,
@@ -47,8 +48,8 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, TextArrayWriteable
     }
 
     //call by client, used to set the ExtraHadoopConfiguration : extraConfig major
-    public static ExcelHdfsFileSource of(UgiDoAs doAs, String filepattern, String encoding, String sheetName, long header, long footer) {
-        return new ExcelHdfsFileSource(doAs, filepattern, encoding, sheetName, header, footer, new ExtraHadoopConfiguration(), null);
+    public static ExcelHdfsFileSource of(UgiDoAs doAs, String filepattern, String encoding, String sheetName, long header, long footer, String excelFormat) {
+        return new ExcelHdfsFileSource(doAs, filepattern, encoding, sheetName, header, footer, excelFormat, new ExtraHadoopConfiguration(), null);
     }
 
     //call back by framework only, we call construct to set the parameter in ExtraHadoopConfiguration : extraConfig object before it

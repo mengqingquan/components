@@ -25,6 +25,7 @@ import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.hadoop.io.Writable;
+import org.talend.components.simplefileio.ExcelFormat;
 import org.talend.components.simplefileio.runtime.hadoop.excel.TextArrayWriteable;
 import org.talend.components.simplefileio.runtime.sources.ExcelHdfsFileSource;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
@@ -41,18 +42,20 @@ public class SimpleRecordFormatExcelIO extends SimpleRecordFormatBase {
     private final String encoding;
     private final long header;
     private final long footer;
+    private final ExcelFormat excelFormat;
 
-    public SimpleRecordFormatExcelIO(UgiDoAs doAs, String path, boolean overwrite, int limit, boolean mergeOutput, String encoding, String sheetName, long header, long footer) {
+    public SimpleRecordFormatExcelIO(UgiDoAs doAs, String path, boolean overwrite, int limit, boolean mergeOutput, String encoding, String sheetName, long header, long footer, ExcelFormat excelFormat) {
         super(doAs, path, overwrite, limit, mergeOutput);
         this.sheetName = sheetName;
         this.encoding = encoding;
         this.header = header;
         this.footer = footer;
+        this.excelFormat = excelFormat;
     }
 
     @Override
     public PCollection<IndexedRecord> read(PBegin in) {
-        ExcelHdfsFileSource source = ExcelHdfsFileSource.of(doAs, path, encoding, sheetName, header, footer);
+        ExcelHdfsFileSource source = ExcelHdfsFileSource.of(doAs, path, encoding, sheetName, header, footer, excelFormat.name());
         source.getExtraHadoopConfiguration().addFrom(getExtraHadoopConfiguration());
         source.setLimit(limit);
         PCollection<KV<Void, TextArrayWriteable>> pc1 = in.apply(Read.from(source));

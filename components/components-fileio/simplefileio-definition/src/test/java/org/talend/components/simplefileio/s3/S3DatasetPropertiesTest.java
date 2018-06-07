@@ -89,7 +89,7 @@ public class S3DatasetPropertiesTest {
         Form main = properties.getForm(Form.MAIN);
         assertThat(main, notNullValue());
 
-        assertThat(main.getWidgets(), hasSize(18));
+        assertThat(main.getWidgets(), hasSize(19));
 
         for (String field : ALL) {
             Widget w = main.getWidget(field);

@@ -74,7 +74,7 @@ public class SimpleFileIOInputRuntime extends PTransform<PBegin, PCollection<Ind
             
         case EXCEL:
             SimpleFileIODatasetProperties ds = properties.getDatasetProperties();
-            rf = new SimpleRecordFormatExcelIO(doAs, path, overwrite, limit, mergeOutput, ds.getEncoding(), ds.getSheetName(), ds.getHeaderLine(), ds.getFooterLine());
+            rf = new SimpleRecordFormatExcelIO(doAs, path, overwrite, limit, mergeOutput, ds.getEncoding(), ds.getSheetName(), ds.getHeaderLine(), ds.getFooterLine(), ds.getExcelFormat());
             break;
         }
 
