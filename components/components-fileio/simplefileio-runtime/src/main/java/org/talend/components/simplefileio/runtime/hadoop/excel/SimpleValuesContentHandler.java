@@ -67,7 +67,7 @@ class SimpleValuesContentHandler extends DefaultHandler {
                 // New line
                 values.add(new ArrayList<String>());
                 index = -1;
-            } else if ("td".equals(localName)) {
+            } else if ("td".equals(localName) || "th".equals(localName)) {
                 inValue = true;
                 getLastRow().add(StringUtils.EMPTY);
                 index++;
@@ -81,7 +81,7 @@ class SimpleValuesContentHandler extends DefaultHandler {
             if("tr".equals(localName) && rowSize > 0 && getLastRow().size() < rowSize) {
                 // Discard row (does not match column number)
                 values.remove(values.size() - 1);
-            } else if ("td".equals(localName)) {
+            } else if ("td".equals(localName) || "th".equals(localName)) {
                 inValue = false;
             }
         }

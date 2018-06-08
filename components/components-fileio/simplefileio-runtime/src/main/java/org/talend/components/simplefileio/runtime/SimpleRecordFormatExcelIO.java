@@ -25,8 +25,8 @@ import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.hadoop.io.Writable;
+import org.talend.components.adapter.beam.coders.LazyAvroCoder;
 import org.talend.components.simplefileio.ExcelFormat;
-import org.talend.components.simplefileio.runtime.hadoop.excel.TextArrayWriteable;
 import org.talend.components.simplefileio.runtime.sources.ExcelHdfsFileSource;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
 import org.talend.daikon.avro.converter.IndexedRecordConverter;
@@ -55,40 +55,14 @@ public class SimpleRecordFormatExcelIO extends SimpleRecordFormatBase {
 
     @Override
     public PCollection<IndexedRecord> read(PBegin in) {
-        ExcelHdfsFileSource source = ExcelHdfsFileSource.of(doAs, path, encoding, sheetName, header, footer, excelFormat.name());
+        LazyAvroCoder<IndexedRecord> lac = LazyAvroCoder.of();
+        
+        ExcelHdfsFileSource source = ExcelHdfsFileSource.of(doAs, path, lac, encoding, sheetName, header, footer, excelFormat.name());
         source.getExtraHadoopConfiguration().addFrom(getExtraHadoopConfiguration());
         source.setLimit(limit);
-        PCollection<KV<Void, TextArrayWriteable>> pc1 = in.apply(Read.from(source));
-        PCollection<TextArrayWriteable> pc2 = pc1.apply(Values.<TextArrayWriteable>create());
-        PCollection<IndexedRecord> pc3 = pc2.apply(ParDo.of(new ExtractRecordFromRowObject()));
-        return pc3;
-    }
-
-    public static class ExtractRecordFromRowObject extends DoFn<TextArrayWriteable, IndexedRecord> {
-
-        static {
-            // Ensure that the singleton for the SimpleFileIOAvroRegistry is created.
-            SimpleFileIOAvroRegistry.get();
-        }
-        
-        private transient IndexedRecordConverter<String[], ? extends IndexedRecord> converter;
-
-        @ProcessElement
-        public void processElement(ProcessContext c) {
-            if (converter == null) {
-                converter = new SimpleFileIOAvroRegistry.StringArrayToIndexedRecordConverter();
-            }
-            //TODO not good here
-            TextArrayWriteable ta = c.element();
-            Writable[] columns = (Writable[])ta.get();
-            List<String> list = new ArrayList<String>();
-            for(Writable column : columns) {
-              list.add(column.toString());
-            }
-            String[] input = list.toArray(new String[0]);
-            IndexedRecord output = converter.convertToAvro(input);
-            c.output(output);
-        }
+        PCollection<KV<Void, IndexedRecord>> pc1 = in.apply(Read.from(source)).setCoder(source.getDefaultOutputCoder());
+        PCollection<IndexedRecord> pc2 = pc1.apply(Values.<IndexedRecord>create());
+        return pc2;
     }
 
     //now no output support, so TODO

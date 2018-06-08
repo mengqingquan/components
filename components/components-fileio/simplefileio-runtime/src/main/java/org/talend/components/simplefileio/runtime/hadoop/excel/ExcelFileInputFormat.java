@@ -2,6 +2,7 @@ package org.talend.components.simplefileio.runtime.hadoop.excel;
 
 import java.io.IOException;
 
+import org.apache.avro.generic.IndexedRecord;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -9,7 +10,7 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
-public class ExcelFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<Void, TextArrayWriteable> {
+public class ExcelFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<Void, IndexedRecord> {
 
   public static String TALEND_ENCODING = "talend_excel_encoding";
   

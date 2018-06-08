@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.Path;
@@ -434,6 +435,9 @@ public class SimpleFileIODatasetRuntimeTest {
         });
 
         assertThat(actual, hasSize(100));
+        
+        List<Field> fields = actual.get(0).getSchema().getFields();
+        assertThat("UID", equalTo(fields.get(0).name()));
     }
     
     @Test

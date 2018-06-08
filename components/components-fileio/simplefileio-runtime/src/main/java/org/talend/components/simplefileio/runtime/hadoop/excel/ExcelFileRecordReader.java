@@ -3,16 +3,21 @@ package org.talend.components.simplefileio.runtime.hadoop.excel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
+import org.apache.avro.SchemaBuilder;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.IndexedRecord;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
@@ -29,6 +34,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.talend.daikon.avro.NameUtil;
 
 /**
  * https://github.com/apache/poi/tree/trunk/src/examples/src/org/apache/poi/xssf
@@ -37,14 +43,14 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
  * @author wangwei
  *
  */
-public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable> {
+public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
   private static final Log LOG = LogFactory.getLog(ExcelFileRecordReader.class);
 
   private Workbook workbook;
   
   private Sheet sheet;
 
-  private TextArrayWriteable value;
+  private IndexedRecord value;
 
   private Decompressor decompressor;
 
@@ -114,12 +120,42 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
     //for html format, the first line is always the schema show, we don't read it always now, so header 1 or 0 both mean skip the schema row only.
     //TODO now we implement the header like "skip lines" which is clear name for the implement, need to consider what the header work for? for schema retrieve? or for skip lines only?
     header = Math.max(1, header);
+    boolean isSchemaHeader = header < 2;
     
     htmlRowIterator = rows.iterator();
+    
+    //we use it to fetch the schema
+    List<String> headerRow = null;
+    
     while ((header--) > 0 && htmlRowIterator.hasNext()) {
       currentRow++;
-      htmlRowIterator.next();
+      headerRow = htmlRowIterator.next();
     }
+    
+    //as only one task to process the excel as no split, so we can do that like this
+    if(isSchemaHeader && headerRow!=null && !headerRow.isEmpty()) {
+      schema = createSchema(headerRow, true);
+    }
+  }
+  
+  private Schema createSchema(List<String> headerRow, boolean validName) {
+    SchemaBuilder.FieldAssembler<Schema> fa = SchemaBuilder.record(FIELD_PREFIX).fields();
+    
+    if(headerRow!=null) {
+      Set<String> existNames = new HashSet<String>();
+      int index = 0;
+      
+      for (int i = 0; i < headerRow.size(); i++) {
+          String fieldName = validName ? headerRow.get(i) : (FIELD_PREFIX + i);
+          
+          String finalName = NameUtil.correct(fieldName, index++, existNames);
+          existNames.add(finalName);
+          
+          fa = fa.name(finalName).type(Schema.create(Schema.Type.STRING)).noDefault();
+      }
+    }
+    
+    return fa.endRecord();
   }
 
   private void init4Excel2007And97(InputStream in) throws IOException {
@@ -146,17 +182,48 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
 
     // skip header
     rowIterator = sheet.iterator();
+    
+    //we use it to fetch the schema
+    Row headerRow = null;
+    
     while ((header--) > 0 && rowIterator.hasNext()) {
       currentRow++;
-      rowIterator.next();
-    }
-  }
-
-  public boolean nextKeyValue() throws IOException {
-    if (value == null) {
-      value = new TextArrayWriteable();
+      headerRow = rowIterator.next();
     }
     
+    //as only one task to process the excel as no split, so we can do that like this
+    if(headerRow!=null && headerRow.getLastCellNum() > 0) {
+      schema = createSchema(headerRow, false);
+    }
+  }
+  
+  private static final String RECORD_NAME = "StringArrayRecord";
+
+  private static final String FIELD_PREFIX = "field";
+  
+  private Schema createSchema(Row headerRow, boolean validName) {
+    SchemaBuilder.FieldAssembler<Schema> fa = SchemaBuilder.record(RECORD_NAME).fields();
+    
+    if(headerRow!=null) {
+      Set<String> existNames = new HashSet<String>();
+      int index = 0;
+      
+      for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+          String fieldName = validName ? ExcelUtils.getCellValueAsString(headerRow.getCell(i), formulaEvaluator) : (FIELD_PREFIX + i);
+          
+          String finalName = NameUtil.correct(fieldName, index++, existNames);
+          existNames.add(finalName);
+          
+          fa = fa.name(finalName).type(Schema.create(Schema.Type.STRING)).noDefault();
+      }
+    }
+    
+    return fa.endRecord();
+  }
+
+  private Schema schema;
+  
+  public boolean nextKeyValue() throws IOException {
     if (currentRow >= endRow) {
       return false;
     }
@@ -176,15 +243,20 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
 
     List<String> row = htmlRowIterator.next();
 
-    List<Text> list = new ArrayList<Text>();
-
-    for (String column : row) {
-      Text text = new Text(column);
-      list.add(text);
+    //if not fill the schema before as no header or invalid header, set it here and as no valid name as no header, so set a name like this : field1,field2,field3
+    if(schema == null) {
+      schema = createSchema(row, false);
     }
-
-    Text[] contents = list.toArray(new Text[0]);
-    value.set(contents);
+    value = new GenericData.Record(schema);
+   
+    List<Field> fields = schema.getFields();
+    
+    for (int i=0;i<row.size();i++) {
+      if(i<fields.size()) {
+        value.put(i, row.get(i));
+      }
+    }
+    
     return true;
   }
 
@@ -197,16 +269,22 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
 
     Row row = rowIterator.next();
 
-    List<Text> list = new ArrayList<Text>();
-
+    //if not fill the schema before as no header or invalid header, set it here and as no valid name as no header, so set a name like this : field1,field2,field3
+    if(schema == null) {
+      schema = createSchema(row, false);
+    }
+    value = new GenericData.Record(schema);
+    
+    List<Field> fields = schema.getFields();
+    
+    int i = 0;
     for (Cell cell : row) {
-      String content = ExcelUtils.getCellValueAsString(cell, formulaEvaluator);
-      Text text = new Text(content);
-      list.add(text);
+      if(i < fields.size()) {
+        String content = ExcelUtils.getCellValueAsString(cell, formulaEvaluator);
+        value.put(i++, content);
+      }
     }
 
-    Text[] contents = list.toArray(new Text[0]);
-    value.set(contents);
     return true;
   }
 
@@ -216,7 +294,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, TextArrayWriteable
   }
 
   @Override
-  public TextArrayWriteable getCurrentValue() {
+  public IndexedRecord getCurrentValue() {
     return value;
   }
 
