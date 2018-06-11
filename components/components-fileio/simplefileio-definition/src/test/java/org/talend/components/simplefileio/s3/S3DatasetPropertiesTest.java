@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.hamcrest.core.IsNull;
 import org.junit.Before;
 import org.junit.Test;
+import org.talend.components.simplefileio.ExcelFormat;
 import org.talend.components.simplefileio.SimpleFileIODatasetDefinition;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.FieldDelimiterType;
 import org.talend.components.simplefileio.SimpleFileIODatasetProperties.RecordDelimiterType;
@@ -173,7 +174,7 @@ public class S3DatasetPropertiesTest {
                 assertThat(main.getWidget("fieldDelimiter").isVisible(), is(false));
                 assertThat(main.getWidget("specificFieldDelimiter").isVisible(), is(false));
                 
-                assertThat(main.getWidget("encoding").isVisible(), is(true));
+                assertThat(main.getWidget("encoding").isVisible(), is(false));
                 assertThat(main.getWidget("specificEncoding").isVisible(), is(false));
                 assertThat(main.getWidget("setHeaderLine").isVisible(), is(true));
                 assertThat(main.getWidget("headerLine").isVisible(), is(false));
@@ -192,6 +193,7 @@ public class S3DatasetPropertiesTest {
                 properties.afterSetFooterLine();
                 assertThat(main.getWidget("footerLine").isVisible(), is(true));
                 
+                properties.excelFormat.setValue(ExcelFormat.HTML);
                 properties.encoding.setValue(EncodingType.OTHER);
                 properties.afterEncoding();
                 assertThat(main.getWidget("specificEncoding").isVisible(), is(true));

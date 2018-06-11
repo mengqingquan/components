@@ -165,10 +165,14 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
       throw new RuntimeException("failed to create workbook object : " + e.getMessage());
     }
 
-    for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-      String sheetName = workbook.getSheetName(i);
-      if (sheetName.equals(this.sheetName)) {
-        sheet = workbook.getSheetAt(i);
+    if(workbook.getNumberOfSheets() > 0) {
+      sheet = workbook.getSheetAt(0);
+      for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+        String sheetName = workbook.getSheetName(i);
+        if (sheetName.equals(this.sheetName)) {
+          sheet = workbook.getSheetAt(i);
+          break;
+        }
       }
     }
 

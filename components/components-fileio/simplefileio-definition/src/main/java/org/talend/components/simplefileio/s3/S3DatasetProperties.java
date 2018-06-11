@@ -184,12 +184,13 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
             boolean isExcel = format.getValue() == SimpleFileIOFormat.EXCEL;
             form.getWidget(excelFormat).setVisible(isExcel);
             //html format no sheet setting
-            form.getWidget(sheet).setVisible(isExcel && (excelFormat.getValue() != ExcelFormat.HTML));
+            boolean isHTML = excelFormat.getValue() == ExcelFormat.HTML;
+            form.getWidget(sheet).setVisible(isExcel && (!isHTML));
             
             boolean isCSVOrExcel = isCSV || isExcel;
-            form.getWidget(encoding).setVisible(isCSVOrExcel);
+            form.getWidget(encoding).setVisible(isCSV || (isExcel && isHTML));
             form.getWidget(specificEncoding)
-                    .setVisible(isCSVOrExcel && encoding.getValue().equals(EncodingType.OTHER));
+                    .setVisible((isCSV || (isExcel && isHTML)) && encoding.getValue().equals(EncodingType.OTHER));
             form.getWidget(setHeaderLine).setVisible(isCSVOrExcel);
             form.getWidget(headerLine).setVisible(isCSVOrExcel && setHeaderLine.getValue());
             
@@ -262,6 +263,10 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     }
     
     public void afterEncoding() {
+        refreshLayout(getForm(Form.MAIN));
+    }
+    
+    public void afterExcelFormat() {
         refreshLayout(getForm(Form.MAIN));
     }
 

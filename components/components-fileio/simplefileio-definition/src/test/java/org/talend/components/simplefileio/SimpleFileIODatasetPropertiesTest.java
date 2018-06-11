@@ -166,7 +166,7 @@ public class SimpleFileIODatasetPropertiesTest {
                 assertThat(main.getWidget("fieldDelimiter").isVisible(), is(false));
                 assertThat(main.getWidget("specificFieldDelimiter").isVisible(), is(false));
                 
-                assertThat(main.getWidget("encoding").isVisible(), is(true));
+                assertThat(main.getWidget("encoding").isVisible(), is(false));
                 assertThat(main.getWidget("specificEncoding").isVisible(), is(false));
                 assertThat(main.getWidget("setHeaderLine").isVisible(), is(true));
                 assertThat(main.getWidget("headerLine").isVisible(), is(false));
@@ -185,6 +185,7 @@ public class SimpleFileIODatasetPropertiesTest {
                 properties.afterSetFooterLine();
                 assertThat(main.getWidget("footerLine").isVisible(), is(true));
                 
+                properties.excelFormat.setValue(ExcelFormat.HTML);
                 properties.encoding.setValue(EncodingType.OTHER);
                 properties.afterEncoding();
                 assertThat(main.getWidget("specificEncoding").isVisible(), is(true));
