@@ -32,6 +32,7 @@ import org.talend.components.api.component.runtime.WriteOperation;
 import org.talend.components.api.component.runtime.WriterWithFeedback;
 import org.talend.components.api.container.RuntimeContainer;
 import org.talend.components.common.runtime.DynamicSchemaUtils;
+import org.talend.components.common.tableaction.TableAction;
 import org.talend.components.snowflake.SnowflakeConnectionProperties;
 import org.talend.components.snowflake.runtime.utils.SchemaResolver;
 import org.talend.components.snowflake.tsnowflakeoutput.TSnowflakeOutputProperties;
@@ -43,6 +44,8 @@ import net.snowflake.client.loader.LoaderFactory;
 import net.snowflake.client.loader.LoaderProperty;
 import net.snowflake.client.loader.Operation;
 import net.snowflake.client.loader.StreamLoader;
+
+import static org.talend.components.common.tableaction.TableAction.TableActionEnum;
 
 public final class SnowflakeWriter implements WriterWithFeedback<Result, IndexedRecord, IndexedRecord> {
 
@@ -117,6 +120,7 @@ public final class SnowflakeWriter implements WriterWithFeedback<Result, Indexed
 
         Map<LoaderProperty, Object> prop = new HashMap<>();
         boolean isUpperCase = sprops.convertColumnsAndTableToUppercase.getValue();
+        TableActionEnum tableAction = TableActionEnum.valueOf(sprops.tableAction.getValue());
         String tableName = isUpperCase ? sprops.getTableName().toUpperCase() : sprops.getTableName();
         prop.put(LoaderProperty.tableName, tableName);
         prop.put(LoaderProperty.schemaName, connectionProperties.schemaName.getStringValue());
@@ -134,6 +138,10 @@ public final class SnowflakeWriter implements WriterWithFeedback<Result, Indexed
         case DELETE:
             prop.put(LoaderProperty.operation, Operation.DELETE);
             break;
+        }
+
+        if (tableAction == TableActionEnum.TRUNCATE) {
+            prop.put(LoaderProperty.truncateTable, "true");
         }
 
         List<Field> columns = mainSchema.getFields();
