@@ -2,6 +2,7 @@ package org.talend.components.common.tableaction;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public interface TableAction {
 
@@ -15,6 +16,10 @@ public interface TableAction {
         TRUNCATE
     }
 
-    void exec(Connection connection) throws SQLException;
+    /**
+     *
+     * @return List<String> List of queries to execute.
+     */
+    List<String> getQueries() throws Exception;
 
 }

@@ -32,6 +32,7 @@ import org.talend.components.api.component.runtime.WriteOperation;
 import org.talend.components.api.component.runtime.WriterWithFeedback;
 import org.talend.components.api.container.RuntimeContainer;
 import org.talend.components.common.runtime.DynamicSchemaUtils;
+import org.talend.components.common.tableaction.TableActionManager;
 import org.talend.components.common.tableaction.TableAction;
 import org.talend.components.snowflake.SnowflakeConnectionProperties;
 import org.talend.components.snowflake.runtime.utils.SchemaResolver;
@@ -120,7 +121,7 @@ public final class SnowflakeWriter implements WriterWithFeedback<Result, Indexed
 
         Map<LoaderProperty, Object> prop = new HashMap<>();
         boolean isUpperCase = sprops.convertColumnsAndTableToUppercase.getValue();
-        TableActionEnum tableAction = TableActionEnum.valueOf(sprops.tableAction.getValue());
+        TableActionEnum SelectedTableAction = TableActionEnum.valueOf(sprops.tableAction.getValue());
         String tableName = isUpperCase ? sprops.getTableName().toUpperCase() : sprops.getTableName();
         prop.put(LoaderProperty.tableName, tableName);
         prop.put(LoaderProperty.schemaName, connectionProperties.schemaName.getStringValue());
@@ -140,7 +141,7 @@ public final class SnowflakeWriter implements WriterWithFeedback<Result, Indexed
             break;
         }
 
-        if (tableAction == TableActionEnum.TRUNCATE) {
+        if (SelectedTableAction == TableActionEnum.TRUNCATE) {
             prop.put(LoaderProperty.truncateTable, "true");
         }
 
@@ -171,6 +172,17 @@ public final class SnowflakeWriter implements WriterWithFeedback<Result, Indexed
 
         loader = (StreamLoader) LoaderFactory.createLoader(prop, uploadConnection, processingConnection);
         loader.setListener(listener);
+
+        if (SelectedTableAction != TableActionEnum.TRUNCATE) {
+
+            try {
+                TableActionManager.exec(processingConnection, SelectedTableAction, loader.getFullTableName(), sprops.getSchema());
+            }catch (IOException e){
+                throw e;
+            }catch (Exception e){
+                throw new IOException(e.getMessage(), e);
+            }
+        }
 
         loader.start();
     }

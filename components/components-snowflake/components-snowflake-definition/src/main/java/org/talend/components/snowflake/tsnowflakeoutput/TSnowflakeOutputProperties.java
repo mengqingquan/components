@@ -50,7 +50,7 @@ public class TSnowflakeOutputProperties extends SnowflakeConnectionTableProperti
     }
 
     public Property<String> tableAction = newString("tableAction")
-            .setPossibleValues(TableAction.TableActionEnum.NONE, TableAction.TableActionEnum.TRUNCATE);
+            .setPossibleValues(TableAction.TableActionEnum.NONE, TableAction.TableActionEnum.TRUNCATE, TableAction.TableActionEnum.CREATE);
 
     public Property<OutputAction> outputAction = newEnum("outputAction", OutputAction.class); // $NON-NLS-1$
 
