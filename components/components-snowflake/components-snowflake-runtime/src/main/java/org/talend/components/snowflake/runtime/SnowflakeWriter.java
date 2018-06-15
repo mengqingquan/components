@@ -121,7 +121,7 @@ public final class SnowflakeWriter implements WriterWithFeedback<Result, Indexed
 
         Map<LoaderProperty, Object> prop = new HashMap<>();
         boolean isUpperCase = sprops.convertColumnsAndTableToUppercase.getValue();
-        TableActionEnum SelectedTableAction = TableActionEnum.valueOf(sprops.tableAction.getValue());
+        TableActionEnum SelectedTableAction = sprops.tableAction.getValue();
         String tableName = isUpperCase ? sprops.getTableName().toUpperCase() : sprops.getTableName();
         prop.put(LoaderProperty.tableName, tableName);
         prop.put(LoaderProperty.schemaName, connectionProperties.schemaName.getStringValue());
@@ -174,7 +174,6 @@ public final class SnowflakeWriter implements WriterWithFeedback<Result, Indexed
         loader.setListener(listener);
 
         if (SelectedTableAction != TableActionEnum.TRUNCATE) {
-
             try {
                 TableActionManager.exec(processingConnection, SelectedTableAction, loader.getFullTableName(), sprops.getSchema());
             }catch (IOException e){

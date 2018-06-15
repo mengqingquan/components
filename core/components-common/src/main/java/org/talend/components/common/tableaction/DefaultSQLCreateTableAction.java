@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.talend.daikon.avro.SchemaConstants;
 
 import java.security.InvalidParameterException;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,30 +29,75 @@ public class DefaultSQLCreateTableAction implements TableAction {
 
     private Schema schema;
 
-    public DefaultSQLCreateTableAction(final String table, final Schema schema) {
+    private boolean drop;
+
+    private boolean createIfNotExists;
+    private boolean dropIfExists;
+
+    public DefaultSQLCreateTableAction(final String table, final Schema schema, boolean createIfNotExists, boolean drop,
+            boolean dropIfExists) {
         if (table == null || table.isEmpty()) {
             throw new InvalidParameterException("Table name can't null or empty");
         }
+
         this.table = table;
         this.schema = schema;
+        this.createIfNotExists = createIfNotExists;
+
+        this.drop = drop;
+        this.dropIfExists = dropIfExists;
+        if(dropIfExists){
+            this.drop = true;
+        }
+
     }
 
     @Override
     public List<String> getQueries() throws Exception {
         List<String> queries = new ArrayList<>();
 
-        log.debug("Create table '" + table + "'");
+        if (drop) {
+            queries.add(getDropTableQuery());
+        }
 
+        queries.add(getCreateTableQuery());
+
+        if (log.isDebugEnabled()) {
+            log.debug("Generated SQL queries for create table:");
+            for (String q : queries) {
+                log.debug(q);
+            }
+        }
+
+        return queries;
+    }
+
+    private String getDropTableQuery() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("DROP TABLE ");
+        if(dropIfExists){
+            sb.append("IF EXISTS ");
+        }
+        sb.append(table);
+        sb.append(" CASCADE");
+
+        return sb.toString();
+    }
+
+    private String getCreateTableQuery() {
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE ");
+
+        if(createIfNotExists){
+            sb.append("IF NOT EXISTS ");
+        }
+
         sb.append(table);
         sb.append(" (");
         sb.append(buildColumns());
         sb.append(")");
 
-        queries.add(sb.toString());
-
-        return queries;
+        return sb.toString();
     }
 
     private StringBuilder buildColumns() {
@@ -69,42 +113,41 @@ public class DefaultSQLCreateTableAction implements TableAction {
 
             String sDBLength = f.getProp(SchemaConstants.TALEND_COLUMN_DB_LENGTH);
             String sDBName = f.getProp(SchemaConstants.TALEND_COLUMN_DB_COLUMN_NAME);
-            String sDBType= f.getProp(SchemaConstants.TALEND_COLUMN_DB_TYPE);
+            String sDBType = f.getProp(SchemaConstants.TALEND_COLUMN_DB_TYPE);
             String sDBDefault = f.getProp(SchemaConstants.TALEND_COLUMN_DEFAULT);
             String sDBPrecision = f.getProp(SchemaConstants.TALEND_COLUMN_PRECISION);
             String sDBScale = f.getProp(SchemaConstants.TALEND_COLUMN_SCALE);
             boolean sDBIsKey = Boolean.valueOf(f.getProp(SchemaConstants.TALEND_COLUMN_IS_KEY)).booleanValue();
 
             String name = sDBName == null ? f.name() : sDBName;
-            if(sDBIsKey){
+            if (sDBIsKey) {
                 keys.add(name);
             }
             sb.append(name);
             sb.append(" ");
 
-            if(isNullOrEmpty(sDBType)) {
+            if (isNullOrEmpty(sDBType)) {
                 // If DB type not set, try to guess it
                 sDBType = ConvertAvroTypeToSQL.convertToSQLTypeString(f.schema());
             }
             sb.append(sDBType);
 
             // Length
-            if(!isNullOrEmpty(sDBLength)){
+            if (!isNullOrEmpty(sDBLength)) {
                 sb.append("(");
                 sb.append(sDBLength);
                 sb.append(")");
-            }
-            else if(!isNullOrEmpty(sDBPrecision)){ // or precision/scale
+            } else if (!isNullOrEmpty(sDBPrecision)) { // or precision/scale
                 sb.append("(");
                 sb.append(sDBPrecision);
-                if(!isNullOrEmpty(sDBScale)){
+                if (!isNullOrEmpty(sDBScale)) {
                     sb.append(", ");
                     sb.append(sDBScale);
                 }
                 sb.append(")");
             }
 
-            if(!isNullOrEmpty(sDBDefault)){
+            if (!isNullOrEmpty(sDBDefault)) {
                 sb.append(" DEFAULT ");
                 sb.append(sDBDefault);
             }
@@ -112,14 +155,14 @@ public class DefaultSQLCreateTableAction implements TableAction {
             first = false;
         }
 
-        if(keys.size() > 0){
+        if (keys.size() > 0) {
             sb.append(", CONSTRAINT pk_");
             sb.append(table);
             sb.append(" PRIMARY KEY (");
 
             first = true;
-            for(String k: keys){
-                if(!first){
+            for (String k : keys) {
+                if (!first) {
                     sb.append(", ");
                 }
 
@@ -133,8 +176,8 @@ public class DefaultSQLCreateTableAction implements TableAction {
         return sb;
     }
 
-    private static boolean isNullOrEmpty(String s){
-        if(s == null){
+    private static boolean isNullOrEmpty(String s) {
+        if (s == null) {
             return true;
         }
 

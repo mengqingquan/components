@@ -21,29 +21,33 @@ public class TableActionManager {
 
     private static TableAction noAction = new NoAction();
 
-    public final static void exec(Connection connection, TableAction.TableActionEnum action, String tableName, Schema schema) throws Exception{
+    public final static void exec(Connection connection, TableAction.TableActionEnum action, String tableName,
+            Schema schema) throws Exception {
         TableAction tableAction = create(action, tableName, schema);
         _exec(connection, tableAction.getQueries());
     }
 
-    public final static TableAction create(TableAction.TableActionEnum action, String tableName, Schema schema){
-        switch(action){
-            case CREATE:
-                return _createCreateTable(action, tableName, schema);
-            case CLEAR:
-                throw new UnsupportedOperationException("TODO"); // @TODO
+    public final static TableAction create(TableAction.TableActionEnum action, String tableName, Schema schema) {
+        switch (action) {
+        case CREATE:
+            return new DefaultSQLCreateTableAction(tableName, schema, false, false, false);
+        case DROP_CREATE:
+            return new DefaultSQLCreateTableAction(tableName, schema, false, true, false);
+        case DROP_IF_EXISTS_AND_CREATE:
+            return new DefaultSQLCreateTableAction(tableName, schema, false, true, true);
+        case CREATE_IF_NOT_EXISTS:
+            return new DefaultSQLCreateTableAction(tableName, schema, true, false, false);
+        case CLEAR:
+            return new DefaultSQLClearTableAction(tableName);
+        case TRUNCATE:
+            return new DefaultSQLTruncateTableAction(tableName);
         }
 
         return noAction; // default
     }
 
-    private static TableAction _createCreateTable(TableAction.TableActionEnum action, String tableName, Schema schema){
-        TableAction tableAction = new DefaultSQLCreateTableAction(tableName, schema);
-        return tableAction;
-    }
-
-    private static void _exec(Connection connection, List<String> queries) throws Exception{
-        for(String q: queries) {
+    private static void _exec(Connection connection, List<String> queries) throws Exception {
+        for (String q : queries) {
             connection.createStatement().execute(q);
         }
     }

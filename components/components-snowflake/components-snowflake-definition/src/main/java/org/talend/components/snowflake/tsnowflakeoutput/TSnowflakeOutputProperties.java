@@ -49,8 +49,7 @@ public class TSnowflakeOutputProperties extends SnowflakeConnectionTableProperti
         DELETE
     }
 
-    public Property<String> tableAction = newString("tableAction")
-            .setPossibleValues(TableAction.TableActionEnum.NONE, TableAction.TableActionEnum.TRUNCATE, TableAction.TableActionEnum.CREATE);
+    public Property<TableAction.TableActionEnum> tableAction = newEnum("tableAction", TableAction.TableActionEnum.class);
 
     public Property<OutputAction> outputAction = newEnum("outputAction", OutputAction.class); // $NON-NLS-1$
 
@@ -130,7 +129,7 @@ public class TSnowflakeOutputProperties extends SnowflakeConnectionTableProperti
     public void setupLayout() {
         super.setupLayout();
         Form mainForm = getForm(Form.MAIN);
-        mainForm.addRow(widget(tableAction).setWidgetType(Widget.ENUMERATION_WIDGET_TYPE));
+        mainForm.addRow(tableAction);
         mainForm.addRow(outputAction);
         mainForm.addColumn(widget(upsertKeyColumn).setWidgetType(Widget.ENUMERATION_WIDGET_TYPE));
 

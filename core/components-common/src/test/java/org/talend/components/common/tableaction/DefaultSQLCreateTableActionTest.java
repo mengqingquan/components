@@ -8,7 +8,7 @@ import org.talend.daikon.avro.SchemaConstants;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class DefaultSQLCreateTableActionTest {
 
@@ -40,17 +40,89 @@ public class DefaultSQLCreateTableActionTest {
             .endRecord();
 
     @Test
-    public void getQueriesTest(){
-        DefaultSQLCreateTableAction action = new DefaultSQLCreateTableAction("MyTable", schema);
+    public void createTable() {
+        DefaultSQLCreateTableAction action =
+                new DefaultSQLCreateTableAction("MyTable", schema, false, false, false);
         try {
             List<String> queries = action.getQueries();
             assertEquals(1, queries.size());
-            assertEquals("CREATE TABLE MyTable (id NUMERIC, name VARCHAR(255) DEFAULT \"ok\", date DATE, salary MY_DOUBLE(38, 4), updated TIMESTAMP, CONSTRAINT pk_MyTable PRIMARY KEY (id, name))", queries.get(0));
+            assertEquals(
+                    "CREATE TABLE MyTable (id NUMERIC, name VARCHAR(255) DEFAULT \"ok\", date DATE, salary MY_DOUBLE(38, 4), updated TIMESTAMP, CONSTRAINT pk_MyTable PRIMARY KEY (id, name))",
+                    queries.get(0));
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
+    @Test
+    public void createTableIfNotExists() {
+        DefaultSQLCreateTableAction action =
+                new DefaultSQLCreateTableAction("MyTable", schema, true, false, false);
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(1, queries.size());
+            assertEquals(
+                    "CREATE TABLE IF NOT EXISTS MyTable (id NUMERIC, name VARCHAR(255) DEFAULT \"ok\", date DATE, salary MY_DOUBLE(38, 4), updated TIMESTAMP, CONSTRAINT pk_MyTable PRIMARY KEY (id, name))",
+                    queries.get(0));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    @Test
+    public void dropNCreateTable() {
+        DefaultSQLCreateTableAction action =
+                new DefaultSQLCreateTableAction("MyTable", schema, false, true, false);
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(2, queries.size());
+            assertEquals("DROP TABLE MyTable CASCADE", queries.get(0));
+            assertEquals(
+                    "CREATE TABLE MyTable (id NUMERIC, name VARCHAR(255) DEFAULT \"ok\", date DATE, salary MY_DOUBLE(38, 4), updated TIMESTAMP, CONSTRAINT pk_MyTable PRIMARY KEY (id, name))",
+                    queries.get(1));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void dropIfExistsNCreateTable() {
+        DefaultSQLCreateTableAction action =
+                new DefaultSQLCreateTableAction("MyTable", schema, false, false, true);
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(2, queries.size());
+            assertEquals("DROP TABLE IF EXISTS MyTable CASCADE", queries.get(0));
+            assertEquals(
+                    "CREATE TABLE MyTable (id NUMERIC, name VARCHAR(255) DEFAULT \"ok\", date DATE, salary MY_DOUBLE(38, 4), updated TIMESTAMP, CONSTRAINT pk_MyTable PRIMARY KEY (id, name))",
+                    queries.get(1));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void clearNCreateTable() {
+        DefaultSQLClearTableAction action =
+                new DefaultSQLClearTableAction("MyTable");
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(1, queries.size());
+            assertEquals("DELETE FROM MyTable", queries.get(0));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void truncateNCreateTable() {
+        DefaultSQLTruncateTableAction action = new DefaultSQLTruncateTableAction("MyTable");
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(1, queries.size());
+            assertEquals("TRUNCATE TABLE MyTable", queries.get(0));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
