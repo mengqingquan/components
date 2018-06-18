@@ -12,16 +12,13 @@
 // ============================================================================
 package org.talend.components.common.tableaction;
 
-import org.apache.avro.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.talend.daikon.avro.SchemaConstants;
-
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DefaultSQLClearTableAction implements TableAction {
+public class DefaultSQLClearTableAction extends TableAction {
 
     private final Logger log = LoggerFactory.getLogger(DefaultSQLClearTableAction.class);
 
@@ -53,8 +50,11 @@ public class DefaultSQLClearTableAction implements TableAction {
 
     private String getClearTableQuery() {
         StringBuilder sb = new StringBuilder();
-        sb.append("DELETE FROM ");
-        sb.append(table);
+        sb.append(this.getConfig().SQL_DELETE_PREFIX);
+        sb.append(this.getConfig().SQL_DELETE);
+        sb.append(" ");
+        sb.append(escape(table));
+        sb.append(this.getConfig().SQL_DELETE_SUFFIX);
 
         return sb.toString();
     }

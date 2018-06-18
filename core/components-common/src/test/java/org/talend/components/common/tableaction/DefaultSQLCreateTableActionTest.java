@@ -43,6 +43,9 @@ public class DefaultSQLCreateTableActionTest {
     public void createTable() {
         DefaultSQLCreateTableAction action =
                 new DefaultSQLCreateTableAction("MyTable", schema, false, false, false);
+        TableActionConfig conf = new TableActionConfig();
+        conf.SQL_ESCAPE_ENABLED = false;
+        action.setConfig(conf);
         try {
             List<String> queries = action.getQueries();
             assertEquals(1, queries.size());
@@ -58,6 +61,9 @@ public class DefaultSQLCreateTableActionTest {
     public void createTableIfNotExists() {
         DefaultSQLCreateTableAction action =
                 new DefaultSQLCreateTableAction("MyTable", schema, true, false, false);
+        TableActionConfig conf = new TableActionConfig();
+        conf.SQL_ESCAPE_ENABLED = false;
+        action.setConfig(conf);
         try {
             List<String> queries = action.getQueries();
             assertEquals(1, queries.size());
@@ -73,6 +79,11 @@ public class DefaultSQLCreateTableActionTest {
     public void dropNCreateTable() {
         DefaultSQLCreateTableAction action =
                 new DefaultSQLCreateTableAction("MyTable", schema, false, true, false);
+        TableActionConfig conf = new TableActionConfig();
+        conf.SQL_ESCAPE_ENABLED = false;
+        conf.SQL_DROP_TABLE_SUFFIX = " CASCADE";
+        action.setConfig(conf);
+
         try {
             List<String> queries = action.getQueries();
             assertEquals(2, queries.size());
@@ -89,6 +100,11 @@ public class DefaultSQLCreateTableActionTest {
     public void dropIfExistsNCreateTable() {
         DefaultSQLCreateTableAction action =
                 new DefaultSQLCreateTableAction("MyTable", schema, false, false, true);
+        TableActionConfig conf = new TableActionConfig();
+        conf.SQL_ESCAPE_ENABLED = false;
+        conf.SQL_DROP_TABLE_SUFFIX = " CASCADE";
+        action.setConfig(conf);
+
         try {
             List<String> queries = action.getQueries();
             assertEquals(2, queries.size());
@@ -102,9 +118,56 @@ public class DefaultSQLCreateTableActionTest {
     }
 
     @Test
+    public void dropIfExistsNCreateTableWithConfig() {
+        DefaultSQLCreateTableAction action =
+                new DefaultSQLCreateTableAction("MyTable", schema, true, false, true);
+        TableActionConfig conf = new TableActionConfig();
+        conf.SQL_ESCAPE_ENABLED = false;
+        conf.SQL_DROP_TABLE_PREFIX = "SQL_DROP_TABLE_PREFIX ";
+        conf.SQL_DROP_TABLE = "SQL_DROP_TABLE";
+        conf.SQL_DROP_TABLE_IF_EXISITS = "SQL_DROP_TABLE_IF_EXISITS";
+        conf.SQL_DROP_TABLE_SUFFIX = " SQL_DROP_TABLE_SUFFIX";
+
+        conf.SQL_CREATE_TABLE_PREFIX = "SQL_CREATE_TABLE_PREFIX ";
+        conf.SQL_CREATE_TABLE = "SQL_CREATE_TABLE";
+        conf.SQL_CREATE_TABLE_IF_NOT_EXISTS = "SQL_CREATE_TABLE_IF_NOT_EXISTS";
+        conf.SQL_CREATE_TABLE_DEFAULT = "SQL_CREATE_TABLE_DEFAULT";
+        conf.SQL_CREATE_TABLE_CONSTRAINT = "SQL_CREATE_TABLE_CONSTRAINT";
+        conf.SQL_CREATE_TABLE_PRIMARY_KEY_PREFIX = "SQL_CREATE_TABLE_PRIMARY_KEY_PREFIX";
+        conf.SQL_CREATE_TABLE_PRIMARY_KEY = "SQL_CREATE_TABLE_PRIMARY_KEY";
+        conf.SQL_CREATE_TABLE_PRIMARY_KEY_ENCLOSURE_START = "[";
+        conf.SQL_CREATE_TABLE_PRIMARY_KEY_ENCLOSURE_END = "]";
+        conf.SQL_CREATE_TABLE_FIELD_SEP = "| ";
+        conf.SQL_CREATE_TABLE_FIELD_ENCLOSURE_START = "{";
+        conf.SQL_CREATE_TABLE_FIELD_ENCLOSURE_END = "}";
+        conf.SQL_CREATE_TABLE_LENGTH_START = "<";
+        conf.SQL_CREATE_TABLE_LENGTH_END = ">";
+        conf.SQL_CREATE_TABLE_PRECISION_START = "/";
+        conf.SQL_CREATE_TABLE_PRECISION_END = "\\";
+        conf.SQL_CREATE_TABLE_SCALE_SEP = "#";
+
+
+        action.setConfig(conf);
+
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(2, queries.size());
+            assertEquals("SQL_DROP_TABLE_PREFIX SQL_DROP_TABLE SQL_DROP_TABLE_IF_EXISITS MyTable SQL_DROP_TABLE_SUFFIX", queries.get(0));
+            assertEquals(
+                    "SQL_CREATE_TABLE_PREFIX SQL_CREATE_TABLE SQL_CREATE_TABLE_IF_NOT_EXISTS MyTable {id NUMERIC| name VARCHAR<255> SQL_CREATE_TABLE_DEFAULT \"ok\"| date DATE| salary MY_DOUBLE/38#4\\| updated TIMESTAMP| SQL_CREATE_TABLE_CONSTRAINT SQL_CREATE_TABLE_PRIMARY_KEY_PREFIXMyTable SQL_CREATE_TABLE_PRIMARY_KEY [id| name]}",
+                    queries.get(1));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
     public void clearNCreateTable() {
         DefaultSQLClearTableAction action =
                 new DefaultSQLClearTableAction("MyTable");
+        TableActionConfig conf = new TableActionConfig();
+        conf.SQL_ESCAPE_ENABLED = false;
+        action.setConfig(conf);
         try {
             List<String> queries = action.getQueries();
             assertEquals(1, queries.size());
@@ -117,6 +180,9 @@ public class DefaultSQLCreateTableActionTest {
     @Test
     public void truncateNCreateTable() {
         DefaultSQLTruncateTableAction action = new DefaultSQLTruncateTableAction("MyTable");
+        TableActionConfig conf = new TableActionConfig();
+        conf.SQL_ESCAPE_ENABLED = false;
+        action.setConfig(conf);
         try {
             List<String> queries = action.getQueries();
             assertEquals(1, queries.size());

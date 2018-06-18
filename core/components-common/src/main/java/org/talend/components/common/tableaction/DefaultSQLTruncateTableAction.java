@@ -20,7 +20,7 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DefaultSQLTruncateTableAction implements TableAction {
+public class DefaultSQLTruncateTableAction extends TableAction {
 
     private final Logger log = LoggerFactory.getLogger(DefaultSQLTruncateTableAction.class);
 
@@ -53,9 +53,11 @@ public class DefaultSQLTruncateTableAction implements TableAction {
 
     private String getTruncateTableQuery() {
         StringBuilder sb = new StringBuilder();
-        sb.append("TRUNCATE TABLE ");
-        sb.append(table);
-
+        sb.append(this.getConfig().SQL_TRUNCATE_PREFIX);
+        sb.append(this.getConfig().SQL_TRUNCATE);
+        sb.append(" ");
+        sb.append(escape(table));
+        sb.append(this.getConfig().SQL_TRUNCATE_SUFFIX);
         return sb.toString();
     }
 

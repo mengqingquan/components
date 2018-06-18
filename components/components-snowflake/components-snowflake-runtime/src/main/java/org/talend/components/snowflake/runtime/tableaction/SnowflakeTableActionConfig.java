@@ -10,19 +10,14 @@
 // 9 rue Pages 92150 Suresnes, France
 //
 // ============================================================================
-package org.talend.components.common.tableaction;
+package org.talend.components.snowflake.runtime.tableaction;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import org.talend.components.common.tableaction.TableActionConfig;
 
-class NoAction extends TableAction {
+public class SnowflakeTableActionConfig extends TableActionConfig {
 
-    @Override
-    public List<String> getQueries() throws Exception{
-        // Do nothing
-        return new ArrayList<>();
+    public SnowflakeTableActionConfig(){
+        this.SQL_DROP_TABLE_SUFFIX = " CASCADE";
     }
 
 }

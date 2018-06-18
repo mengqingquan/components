@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
-public interface TableAction {
+public abstract class TableAction {
 
     public static enum TableActionEnum {
         NONE,
@@ -16,10 +16,36 @@ public interface TableAction {
         TRUNCATE
     }
 
+    private TableActionConfig config = new TableActionConfig();
+
     /**
      *
      * @return List<String> List of queries to execute.
      */
-    List<String> getQueries() throws Exception;
+    public abstract List<String> getQueries() throws Exception;
+
+    public void setConfig(TableActionConfig config){
+        this.config = config;
+    }
+
+    public TableActionConfig getConfig(){
+        return this.config;
+    }
+
+    public String escape(String value){
+        if(!this.getConfig().SQL_ESCAPE_ENABLED || isEscaped(value)){
+           return value;
+        }
+
+        return this.getConfig().SQL_ESCAPE+value+this.getConfig().SQL_ESCAPE;
+    }
+
+    public boolean isEscaped(String value){
+        if(value.startsWith(this.getConfig().SQL_ESCAPE) && value.endsWith(this.getConfig().SQL_ESCAPE)){
+            return true;
+        }
+
+        return false;
+    }
 
 }

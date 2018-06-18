@@ -23,7 +23,12 @@ public class TableActionManager {
 
     public final static void exec(Connection connection, TableAction.TableActionEnum action, String tableName,
             Schema schema) throws Exception {
+        exec(connection, action, tableName, schema, new TableActionConfig());
+    }
+    public final static void exec(Connection connection, TableAction.TableActionEnum action, String tableName,
+            Schema schema, TableActionConfig config) throws Exception {
         TableAction tableAction = create(action, tableName, schema);
+        tableAction.setConfig(config);
         _exec(connection, tableAction.getQueries());
     }
 

@@ -21,7 +21,7 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DefaultSQLCreateTableAction implements TableAction {
+public class DefaultSQLCreateTableAction extends TableAction {
 
     private final Logger log = LoggerFactory.getLogger(DefaultSQLCreateTableAction.class);
 
@@ -74,28 +74,37 @@ public class DefaultSQLCreateTableAction implements TableAction {
 
     private String getDropTableQuery() {
         StringBuilder sb = new StringBuilder();
-        sb.append("DROP TABLE ");
+        sb.append(this.getConfig().SQL_DROP_TABLE_PREFIX);
+        sb.append(this.getConfig().SQL_DROP_TABLE);
+        sb.append(" ");
         if(dropIfExists){
-            sb.append("IF EXISTS ");
+            sb.append(this.getConfig().SQL_DROP_TABLE_IF_EXISITS);
+            sb.append(" ");
         }
-        sb.append(table);
-        sb.append(" CASCADE");
+        sb.append(escape(table));
+        sb.append(this.getConfig().SQL_DROP_TABLE_SUFFIX);
 
         return sb.toString();
     }
 
     private String getCreateTableQuery() {
         StringBuilder sb = new StringBuilder();
-        sb.append("CREATE TABLE ");
+
+        sb.append(this.getConfig().SQL_CREATE_TABLE_PREFIX);
+        sb.append(this.getConfig().SQL_CREATE_TABLE);
+        sb.append(" ");
 
         if(createIfNotExists){
-            sb.append("IF NOT EXISTS ");
+            sb.append(this.getConfig().SQL_CREATE_TABLE_IF_NOT_EXISTS);
+            sb.append(" ");
         }
 
-        sb.append(table);
-        sb.append(" (");
+        sb.append(escape(table));
+        sb.append(" ");
+        sb.append(this.getConfig().SQL_CREATE_TABLE_FIELD_ENCLOSURE_START);
         sb.append(buildColumns());
-        sb.append(")");
+        sb.append(this.getConfig().SQL_CREATE_TABLE_FIELD_ENCLOSURE_END);
+        sb.append(this.getConfig().SQL_CREATE_TABLE_SUFFIX);
 
         return sb.toString();
     }
@@ -108,7 +117,7 @@ public class DefaultSQLCreateTableAction implements TableAction {
         List<String> keys = new ArrayList<>();
         for (Schema.Field f : fields) {
             if (!first) {
-                sb.append(", ");
+                sb.append(this.getConfig().SQL_CREATE_TABLE_FIELD_SEP);
             }
 
             String sDBLength = f.getProp(SchemaConstants.TALEND_COLUMN_DB_LENGTH);
@@ -123,7 +132,7 @@ public class DefaultSQLCreateTableAction implements TableAction {
             if (sDBIsKey) {
                 keys.add(name);
             }
-            sb.append(name);
+            sb.append(escape(name));
             sb.append(" ");
 
             if (isNullOrEmpty(sDBType)) {
@@ -133,44 +142,51 @@ public class DefaultSQLCreateTableAction implements TableAction {
             sb.append(sDBType);
 
             // Length
-            if (!isNullOrEmpty(sDBLength)) {
-                sb.append("(");
+            if (this.getConfig().SQL_CREATE_TABLE_LENGTH_ENABLED && !isNullOrEmpty(sDBLength)) {
+                sb.append(this.getConfig().SQL_CREATE_TABLE_LENGTH_START);
                 sb.append(sDBLength);
-                sb.append(")");
-            } else if (!isNullOrEmpty(sDBPrecision)) { // or precision/scale
-                sb.append("(");
+                sb.append(this.getConfig().SQL_CREATE_TABLE_LENGTH_END);
+            } else if (this.getConfig().SQL_CREATE_TABLE_PRECISION_ENABLED && !isNullOrEmpty(sDBPrecision)) { // or precision/scale
+                sb.append(this.getConfig().SQL_CREATE_TABLE_PRECISION_START);
                 sb.append(sDBPrecision);
-                if (!isNullOrEmpty(sDBScale)) {
-                    sb.append(", ");
+                if (this.getConfig().SQL_CREATE_TABLE_SCALE_ENABLED && !isNullOrEmpty(sDBScale)) {
+                    sb.append(this.getConfig().SQL_CREATE_TABLE_SCALE_SEP);
                     sb.append(sDBScale);
                 }
-                sb.append(")");
+                sb.append(this.getConfig().SQL_CREATE_TABLE_PRECISION_END);
             }
 
-            if (!isNullOrEmpty(sDBDefault)) {
-                sb.append(" DEFAULT ");
+            if (this.getConfig().SQL_CREATE_TABLE_DEFAULT_ENABLED && !isNullOrEmpty(sDBDefault)) {
+                sb.append(" ");
+                sb.append(this.getConfig().SQL_CREATE_TABLE_DEFAULT);
+                sb.append(" ");
                 sb.append(sDBDefault);
             }
 
             first = false;
         }
 
-        if (keys.size() > 0) {
-            sb.append(", CONSTRAINT pk_");
-            sb.append(table);
-            sb.append(" PRIMARY KEY (");
+        if (this.getConfig().SQL_CREATE_TABLE_CONSTRAINT_ENABLED && keys.size() > 0) {
+            sb.append(this.getConfig().SQL_CREATE_TABLE_FIELD_SEP);
+            sb.append(this.getConfig().SQL_CREATE_TABLE_CONSTRAINT);
+            sb.append(" ");
+            sb.append(escape(this.getConfig().SQL_CREATE_TABLE_PRIMARY_KEY_PREFIX+table));
+            sb.append(" ");
+            sb.append(this.getConfig().SQL_CREATE_TABLE_PRIMARY_KEY);
+            sb.append(" ");
+            sb.append(this.getConfig().SQL_CREATE_TABLE_PRIMARY_KEY_ENCLOSURE_START);
 
             first = true;
             for (String k : keys) {
                 if (!first) {
-                    sb.append(", ");
+                    sb.append(this.getConfig().SQL_CREATE_TABLE_FIELD_SEP);
                 }
 
-                sb.append(k);
+                sb.append(escape(k));
 
                 first = false;
             }
-            sb.append(")");
+            sb.append(this.getConfig().SQL_CREATE_TABLE_PRIMARY_KEY_ENCLOSURE_END);
         }
 
         return sb;

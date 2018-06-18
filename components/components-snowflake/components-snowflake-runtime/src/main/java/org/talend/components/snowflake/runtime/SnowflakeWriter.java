@@ -32,9 +32,11 @@ import org.talend.components.api.component.runtime.WriteOperation;
 import org.talend.components.api.component.runtime.WriterWithFeedback;
 import org.talend.components.api.container.RuntimeContainer;
 import org.talend.components.common.runtime.DynamicSchemaUtils;
+import org.talend.components.common.tableaction.TableActionConfig;
 import org.talend.components.common.tableaction.TableActionManager;
 import org.talend.components.common.tableaction.TableAction;
 import org.talend.components.snowflake.SnowflakeConnectionProperties;
+import org.talend.components.snowflake.runtime.tableaction.SnowflakeTableActionConfig;
 import org.talend.components.snowflake.runtime.utils.SchemaResolver;
 import org.talend.components.snowflake.tsnowflakeoutput.TSnowflakeOutputProperties;
 import org.talend.daikon.avro.AvroUtils;
@@ -175,7 +177,8 @@ public final class SnowflakeWriter implements WriterWithFeedback<Result, Indexed
 
         if (SelectedTableAction != TableActionEnum.TRUNCATE) {
             try {
-                TableActionManager.exec(processingConnection, SelectedTableAction, loader.getFullTableName(), sprops.getSchema());
+                TableActionConfig conf = new SnowflakeTableActionConfig();
+                TableActionManager.exec(processingConnection, SelectedTableAction, loader.getFullTableName(), this.mainSchema, conf);
             }catch (IOException e){
                 throw e;
             }catch (Exception e){
