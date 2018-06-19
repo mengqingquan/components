@@ -70,7 +70,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     //CSV and Excel both properties
     public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class).setValue(EncodingType.UTF8);
     public Property<String> specificEncoding = PropertyFactory.newString("specificEncoding", "");
-    public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", false);
+    public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", true);
     public Property<Integer> headerLine = PropertyFactory.newInteger("headerLine", 1);
     
     //advice not set them as default they break the split function for hadoop and beam

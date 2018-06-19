@@ -264,7 +264,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     return true;
   }
 
-  private boolean nextKeyValue4Excel2007And97() {
+  private boolean nextKeyValue4Excel2007And97() throws IOException {
     if (!rowIterator.hasNext()) {
       return false;
     }
@@ -272,6 +272,11 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     currentRow++;
 
     Row row = rowIterator.next();
+    
+    if((row == null) || (row.getLastCellNum() < 1)) {
+      //skip empty rows
+      return nextKeyValue();
+    }
 
     //if not fill the schema before as no header or invalid header, set it here and as no valid name as no header, so set a name like this : field1,field2,field3
     if(schema == null) {

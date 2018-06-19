@@ -142,7 +142,7 @@ public class SimpleFileIODatasetRuntimeTest {
         });
 
         // Check the expected values match.
-        assertThat(actual, hasSize(10));
+        assertThat(actual, hasSize(9));
         // assertThat(actual, (Matcher) equalTo(rs.getAllData()));
     }
     
@@ -203,7 +203,7 @@ public class SimpleFileIODatasetRuntimeTest {
             }
         });
 
-        assertThat(actual, hasSize(10));
+        assertThat(actual, hasSize(9));
     }
     
     @Test
@@ -265,7 +265,7 @@ public class SimpleFileIODatasetRuntimeTest {
             }
         });
   
-        assertThat(actual, hasSize(3));
+        assertThat(actual, hasSize(2));
     }
     
     @Test
@@ -295,7 +295,7 @@ public class SimpleFileIODatasetRuntimeTest {
             }
         });
   
-        assertThat(actual, hasSize(3));
+        assertThat(actual, hasSize(2));
     }
     
     @Test
@@ -326,7 +326,7 @@ public class SimpleFileIODatasetRuntimeTest {
             }
         });
   
-        assertThat(actual, hasSize(3));
+        assertThat(actual, hasSize(2));
     }
 
     @Test
@@ -542,7 +542,7 @@ public class SimpleFileIODatasetRuntimeTest {
             }
         });
 
-        assertThat(actual, hasSize(3));
+        assertThat(actual, hasSize(2));
     }
     
     @Test
@@ -573,7 +573,7 @@ public class SimpleFileIODatasetRuntimeTest {
             }
         });
 
-        assertThat(actual, hasSize(3));
+        assertThat(actual, hasSize(2));
     }
     
     @Test
@@ -588,7 +588,6 @@ public class SimpleFileIODatasetRuntimeTest {
         SimpleFileIODatasetProperties props = createDatasetProperties();
         props.path.setValue(fileSpec);
         props.format.setValue(SimpleFileIOFormat.EXCEL);
-        props.sheet.setValue("not_exists");
 
         // Create the runtime.
         SimpleFileIODatasetRuntime runtime = new SimpleFileIODatasetRuntime();
@@ -604,7 +603,7 @@ public class SimpleFileIODatasetRuntimeTest {
             }
         });
 
-        assertThat(actual, hasSize(3));
+        assertThat(actual, hasSize(2));
     }
     
     @Test
@@ -669,7 +668,7 @@ public class SimpleFileIODatasetRuntimeTest {
             }
         });
 
-        assertThat(actual, hasSize(2));
+        assertThat(actual, hasSize(1));
     }
     
     @Test

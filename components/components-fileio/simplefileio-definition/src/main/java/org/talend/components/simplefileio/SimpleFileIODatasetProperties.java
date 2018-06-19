@@ -39,7 +39,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     
     public Property<EncodingType> encoding = PropertyFactory.newEnum("encoding", EncodingType.class).setValue(EncodingType.UTF8);
     public Property<String> specificEncoding = PropertyFactory.newString("specificEncoding", "");
-    public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", false);
+    public Property<Boolean> setHeaderLine = PropertyFactory.newBoolean("setHeaderLine", true);
     public Property<Integer> headerLine = PropertyFactory.newInteger("headerLine", 1);
     
     //advice not set them as default they break the split function for hadoop and beam
@@ -252,11 +252,7 @@ public class SimpleFileIODatasetProperties extends PropertiesImpl implements Dat
     }
     
     public String getSheetName() {
-        String sheetName = this.sheet.getValue();
-        if((excelFormat.getValue() != ExcelFormat.HTML) && (sheetName == null || sheetName.isEmpty())) {
-          throw new RuntimeException("please set the sheet name, it's necessary");
-        }
-        return sheetName;
+        return this.sheet.getValue();
     }
     
     public ExcelFormat getExcelFormat() {
