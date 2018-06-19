@@ -48,4 +48,33 @@ public abstract class TableAction {
         return false;
     }
 
+    public String buildFullTableName(String[] fullTableName, String sep, boolean escape){
+        StringBuilder name = new StringBuilder();
+        boolean first = true;
+        for(String n : fullTableName){
+            if(!first){
+                name.append(sep);
+            }
+            first = false;
+            n = updateCaseIdentifier(n);
+            if(escape){
+                n = escape(n);
+            }
+            name.append(n);
+        }
+
+        return name.toString();
+    }
+
+    public String updateCaseIdentifier(String identifier){
+        if(this.getConfig().SQL_UPPERCASE_IDENTIFIER){
+            return identifier.toUpperCase();
+        }
+        else if(this.getConfig().SQL_LOWERCASE_IDENTIFIER){
+            return identifier.toLowerCase();
+        }
+
+        return identifier;
+    }
+
 }

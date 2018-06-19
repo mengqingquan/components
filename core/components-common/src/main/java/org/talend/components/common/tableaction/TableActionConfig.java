@@ -14,8 +14,13 @@ package org.talend.components.common.tableaction;
 
 public class TableActionConfig {
 
+    public boolean SQL_UPPERCASE_IDENTIFIER = false;
+    public boolean SQL_LOWERCASE_IDENTIFIER = false;
+
     public String SQL_ESCAPE = "\"";
     public boolean SQL_ESCAPE_ENABLED = true;
+
+    public String SQL_FULL_NAME_SEGMENT_SEP = ".";
 
     public String SQL_CREATE_TABLE_PREFIX = "";
     public String SQL_CREATE_TABLE_SUFFIX = "";
@@ -37,6 +42,7 @@ public class TableActionConfig {
     public String SQL_CREATE_TABLE_PRIMARY_KEY = "PRIMARY KEY";
     public String SQL_CREATE_TABLE_PRIMARY_KEY_ENCLOSURE_START = "(";
     public String SQL_CREATE_TABLE_PRIMARY_KEY_ENCLOSURE_END = ")";
+    public String SQL_PRIMARY_KEY_FULL_NAME_SEGMENT_SEP = "_";
     public String SQL_CREATE_TABLE_DEFAULT = "DEFAULT";
     public boolean SQL_CREATE_TABLE_DEFAULT_ENABLED = true;
     public String SQL_CREATE_TABLE_IF_NOT_EXISTS = "IF NOT EXISTS";

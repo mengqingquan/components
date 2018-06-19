@@ -25,7 +25,7 @@ public class DefaultSQLCreateTableAction extends TableAction {
 
     private final Logger log = LoggerFactory.getLogger(DefaultSQLCreateTableAction.class);
 
-    private String table;
+    private String[] fullTableName;
 
     private Schema schema;
 
@@ -34,13 +34,13 @@ public class DefaultSQLCreateTableAction extends TableAction {
     private boolean createIfNotExists;
     private boolean dropIfExists;
 
-    public DefaultSQLCreateTableAction(final String table, final Schema schema, boolean createIfNotExists, boolean drop,
+    public DefaultSQLCreateTableAction(final String[] fullTableName, final Schema schema, boolean createIfNotExists, boolean drop,
             boolean dropIfExists) {
-        if (table == null || table.isEmpty()) {
-            throw new InvalidParameterException("Table name can't null or empty");
+        if (fullTableName == null || fullTableName.length < 1) {
+            throw new InvalidParameterException("Table name can't be null or empty");
         }
 
-        this.table = table;
+        this.fullTableName = fullTableName;
         this.schema = schema;
         this.createIfNotExists = createIfNotExists;
 
@@ -63,7 +63,7 @@ public class DefaultSQLCreateTableAction extends TableAction {
         queries.add(getCreateTableQuery());
 
         if (log.isDebugEnabled()) {
-            log.debug("Generated SQL queries for create table:");
+            log.debug("Generated SQL queries for create fullTableName:");
             for (String q : queries) {
                 log.debug(q);
             }
@@ -81,7 +81,7 @@ public class DefaultSQLCreateTableAction extends TableAction {
             sb.append(this.getConfig().SQL_DROP_TABLE_IF_EXISITS);
             sb.append(" ");
         }
-        sb.append(escape(table));
+        sb.append(buildFullTableName(fullTableName, this.getConfig().SQL_FULL_NAME_SEGMENT_SEP, true));
         sb.append(this.getConfig().SQL_DROP_TABLE_SUFFIX);
 
         return sb.toString();
@@ -99,7 +99,7 @@ public class DefaultSQLCreateTableAction extends TableAction {
             sb.append(" ");
         }
 
-        sb.append(escape(table));
+        sb.append(buildFullTableName(fullTableName, this.getConfig().SQL_FULL_NAME_SEGMENT_SEP, true));
         sb.append(" ");
         sb.append(this.getConfig().SQL_CREATE_TABLE_FIELD_ENCLOSURE_START);
         sb.append(buildColumns());
@@ -132,7 +132,7 @@ public class DefaultSQLCreateTableAction extends TableAction {
             if (sDBIsKey) {
                 keys.add(name);
             }
-            sb.append(escape(name));
+            sb.append(escape(updateCaseIdentifier(name)));
             sb.append(" ");
 
             if (isNullOrEmpty(sDBType)) {
@@ -170,7 +170,11 @@ public class DefaultSQLCreateTableAction extends TableAction {
             sb.append(this.getConfig().SQL_CREATE_TABLE_FIELD_SEP);
             sb.append(this.getConfig().SQL_CREATE_TABLE_CONSTRAINT);
             sb.append(" ");
-            sb.append(escape(this.getConfig().SQL_CREATE_TABLE_PRIMARY_KEY_PREFIX+table));
+            sb.append(escape(
+                                this.getConfig().SQL_CREATE_TABLE_PRIMARY_KEY_PREFIX +
+                                        buildFullTableName(fullTableName, this.getConfig().SQL_PRIMARY_KEY_FULL_NAME_SEGMENT_SEP, false)
+                            )
+                    );
             sb.append(" ");
             sb.append(this.getConfig().SQL_CREATE_TABLE_PRIMARY_KEY);
             sb.append(" ");
@@ -181,8 +185,7 @@ public class DefaultSQLCreateTableAction extends TableAction {
                 if (!first) {
                     sb.append(this.getConfig().SQL_CREATE_TABLE_FIELD_SEP);
                 }
-
-                sb.append(escape(k));
+                sb.append(escape(updateCaseIdentifier(k)));
 
                 first = false;
             }

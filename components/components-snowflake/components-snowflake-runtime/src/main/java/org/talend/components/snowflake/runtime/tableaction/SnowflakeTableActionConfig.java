@@ -16,7 +16,9 @@ import org.talend.components.common.tableaction.TableActionConfig;
 
 public class SnowflakeTableActionConfig extends TableActionConfig {
 
-    public SnowflakeTableActionConfig(){
+    public SnowflakeTableActionConfig(boolean isUpperCase){
+        this.SQL_UPPERCASE_IDENTIFIER = isUpperCase;
+        this.SQL_ESCAPE_ENABLED = true;
         this.SQL_DROP_TABLE_SUFFIX = " CASCADE";
     }
 

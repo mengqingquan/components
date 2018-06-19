@@ -24,14 +24,14 @@ public class DefaultSQLTruncateTableAction extends TableAction {
 
     private final Logger log = LoggerFactory.getLogger(DefaultSQLTruncateTableAction.class);
 
-    private String table;
+    private String[] fullTableName;
 
-    public DefaultSQLTruncateTableAction(final String table) {
-        if (table == null || table.isEmpty()) {
+    public DefaultSQLTruncateTableAction(final String[] fullTableName) {
+        if (fullTableName == null || fullTableName.length < 1) {
             throw new InvalidParameterException("Table name can't null or empty");
         }
 
-        this.table = table;
+        this.fullTableName = fullTableName;
 
     }
 
@@ -56,7 +56,7 @@ public class DefaultSQLTruncateTableAction extends TableAction {
         sb.append(this.getConfig().SQL_TRUNCATE_PREFIX);
         sb.append(this.getConfig().SQL_TRUNCATE);
         sb.append(" ");
-        sb.append(escape(table));
+        sb.append(buildFullTableName(fullTableName, this.getConfig().SQL_FULL_NAME_SEGMENT_SEP, true));
         sb.append(this.getConfig().SQL_TRUNCATE_SUFFIX);
         return sb.toString();
     }

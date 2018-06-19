@@ -42,7 +42,7 @@ public class DefaultSQLCreateTableActionTest {
     @Test
     public void createTable() {
         DefaultSQLCreateTableAction action =
-                new DefaultSQLCreateTableAction("MyTable", schema, false, false, false);
+                new DefaultSQLCreateTableAction(new String[]{"MyTable"}, schema, false, false, false);
         TableActionConfig conf = new TableActionConfig();
         conf.SQL_ESCAPE_ENABLED = false;
         action.setConfig(conf);
@@ -60,7 +60,7 @@ public class DefaultSQLCreateTableActionTest {
     @Test
     public void createTableIfNotExists() {
         DefaultSQLCreateTableAction action =
-                new DefaultSQLCreateTableAction("MyTable", schema, true, false, false);
+                new DefaultSQLCreateTableAction(new String[]{"MyTable"}, schema, true, false, false);
         TableActionConfig conf = new TableActionConfig();
         conf.SQL_ESCAPE_ENABLED = false;
         action.setConfig(conf);
@@ -78,7 +78,7 @@ public class DefaultSQLCreateTableActionTest {
     @Test
     public void dropNCreateTable() {
         DefaultSQLCreateTableAction action =
-                new DefaultSQLCreateTableAction("MyTable", schema, false, true, false);
+                new DefaultSQLCreateTableAction(new String[]{"MyTable"}, schema, false, true, false);
         TableActionConfig conf = new TableActionConfig();
         conf.SQL_ESCAPE_ENABLED = false;
         conf.SQL_DROP_TABLE_SUFFIX = " CASCADE";
@@ -99,7 +99,7 @@ public class DefaultSQLCreateTableActionTest {
     @Test
     public void dropIfExistsNCreateTable() {
         DefaultSQLCreateTableAction action =
-                new DefaultSQLCreateTableAction("MyTable", schema, false, false, true);
+                new DefaultSQLCreateTableAction(new String[]{"MyTable"}, schema, false, false, true);
         TableActionConfig conf = new TableActionConfig();
         conf.SQL_ESCAPE_ENABLED = false;
         conf.SQL_DROP_TABLE_SUFFIX = " CASCADE";
@@ -118,9 +118,31 @@ public class DefaultSQLCreateTableActionTest {
     }
 
     @Test
+    public void dropIfExistsNCreateTableUppercase() {
+        DefaultSQLCreateTableAction action =
+                new DefaultSQLCreateTableAction(new String[]{"MyTable"}, schema, false, false, true);
+        TableActionConfig conf = new TableActionConfig();
+        conf.SQL_ESCAPE_ENABLED = false;
+        conf.SQL_DROP_TABLE_SUFFIX = " CASCADE";
+        conf.SQL_UPPERCASE_IDENTIFIER = true;
+        action.setConfig(conf);
+
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(2, queries.size());
+            assertEquals("DROP TABLE IF EXISTS MYTABLE CASCADE", queries.get(0));
+            assertEquals(
+                    "CREATE TABLE MYTABLE (ID NUMERIC, NAME VARCHAR(255) DEFAULT \"ok\", DATE DATE, SALARY MY_DOUBLE(38, 4), UPDATED TIMESTAMP, CONSTRAINT pk_MYTABLE PRIMARY KEY (ID, NAME))",
+                    queries.get(1));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
     public void dropIfExistsNCreateTableWithConfig() {
         DefaultSQLCreateTableAction action =
-                new DefaultSQLCreateTableAction("MyTable", schema, true, false, true);
+                new DefaultSQLCreateTableAction(new String[]{"MyTable"}, schema, true, false, true);
         TableActionConfig conf = new TableActionConfig();
         conf.SQL_ESCAPE_ENABLED = false;
         conf.SQL_DROP_TABLE_PREFIX = "SQL_DROP_TABLE_PREFIX ";
@@ -164,7 +186,7 @@ public class DefaultSQLCreateTableActionTest {
     @Test
     public void clearNCreateTable() {
         DefaultSQLClearTableAction action =
-                new DefaultSQLClearTableAction("MyTable");
+                new DefaultSQLClearTableAction(new String[]{"MyTable"});
         TableActionConfig conf = new TableActionConfig();
         conf.SQL_ESCAPE_ENABLED = false;
         action.setConfig(conf);
@@ -179,7 +201,7 @@ public class DefaultSQLCreateTableActionTest {
 
     @Test
     public void truncateNCreateTable() {
-        DefaultSQLTruncateTableAction action = new DefaultSQLTruncateTableAction("MyTable");
+        DefaultSQLTruncateTableAction action = new DefaultSQLTruncateTableAction(new String[]{"MyTable"});
         TableActionConfig conf = new TableActionConfig();
         conf.SQL_ESCAPE_ENABLED = false;
         action.setConfig(conf);
@@ -187,6 +209,20 @@ public class DefaultSQLCreateTableActionTest {
             List<String> queries = action.getQueries();
             assertEquals(1, queries.size());
             assertEquals("TRUNCATE TABLE MyTable", queries.get(0));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void truncateNCreateTableWithFullName() {
+        DefaultSQLTruncateTableAction action = new DefaultSQLTruncateTableAction(new String[]{"mydatabase","myschema","MyTable"});
+        TableActionConfig conf = new TableActionConfig();
+        action.setConfig(conf);
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(1, queries.size());
+            assertEquals("TRUNCATE TABLE \"mydatabase\".\"myschema\".\"MyTable\"", queries.get(0));
         } catch (Exception e) {
             e.printStackTrace();
         }

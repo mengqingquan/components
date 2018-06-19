@@ -21,31 +21,31 @@ public class TableActionManager {
 
     private static TableAction noAction = new NoAction();
 
-    public final static void exec(Connection connection, TableAction.TableActionEnum action, String tableName,
+    public final static void exec(Connection connection, TableAction.TableActionEnum action, String[] fullTableName,
             Schema schema) throws Exception {
-        exec(connection, action, tableName, schema, new TableActionConfig());
+        exec(connection, action, fullTableName, schema, new TableActionConfig());
     }
-    public final static void exec(Connection connection, TableAction.TableActionEnum action, String tableName,
+    public final static void exec(Connection connection, TableAction.TableActionEnum action, String[] fullTableName,
             Schema schema, TableActionConfig config) throws Exception {
-        TableAction tableAction = create(action, tableName, schema);
+        TableAction tableAction = create(action, fullTableName, schema);
         tableAction.setConfig(config);
         _exec(connection, tableAction.getQueries());
     }
 
-    public final static TableAction create(TableAction.TableActionEnum action, String tableName, Schema schema) {
+    public final static TableAction create(TableAction.TableActionEnum action, String[] fullTableName, Schema schema) {
         switch (action) {
         case CREATE:
-            return new DefaultSQLCreateTableAction(tableName, schema, false, false, false);
+            return new DefaultSQLCreateTableAction(fullTableName, schema, false, false, false);
         case DROP_CREATE:
-            return new DefaultSQLCreateTableAction(tableName, schema, false, true, false);
+            return new DefaultSQLCreateTableAction(fullTableName, schema, false, true, false);
         case DROP_IF_EXISTS_AND_CREATE:
-            return new DefaultSQLCreateTableAction(tableName, schema, false, true, true);
+            return new DefaultSQLCreateTableAction(fullTableName, schema, false, true, true);
         case CREATE_IF_NOT_EXISTS:
-            return new DefaultSQLCreateTableAction(tableName, schema, true, false, false);
+            return new DefaultSQLCreateTableAction(fullTableName, schema, true, false, false);
         case CLEAR:
-            return new DefaultSQLClearTableAction(tableName);
+            return new DefaultSQLClearTableAction(fullTableName);
         case TRUNCATE:
-            return new DefaultSQLTruncateTableAction(tableName);
+            return new DefaultSQLTruncateTableAction(fullTableName);
         }
 
         return noAction; // default

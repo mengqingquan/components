@@ -22,14 +22,14 @@ public class DefaultSQLClearTableAction extends TableAction {
 
     private final Logger log = LoggerFactory.getLogger(DefaultSQLClearTableAction.class);
 
-    private String table;
+    private String[] fullTableName;
 
-    public DefaultSQLClearTableAction(final String table) {
-        if (table == null || table.isEmpty()) {
+    public DefaultSQLClearTableAction(final String[] fullTableName) {
+        if (fullTableName == null || fullTableName.length < 1) {
             throw new InvalidParameterException("Table name can't null or empty");
         }
 
-        this.table = table;
+        this.fullTableName = fullTableName;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class DefaultSQLClearTableAction extends TableAction {
         sb.append(this.getConfig().SQL_DELETE_PREFIX);
         sb.append(this.getConfig().SQL_DELETE);
         sb.append(" ");
-        sb.append(escape(table));
+        sb.append(buildFullTableName(fullTableName, this.getConfig().SQL_FULL_NAME_SEGMENT_SEP, true));
         sb.append(this.getConfig().SQL_DELETE_SUFFIX);
 
         return sb.toString();
