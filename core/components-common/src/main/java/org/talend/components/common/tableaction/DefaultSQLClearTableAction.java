@@ -20,7 +20,7 @@ import java.util.List;
 
 public class DefaultSQLClearTableAction extends TableAction {
 
-    private final Logger log = LoggerFactory.getLogger(DefaultSQLClearTableAction.class);
+    private final static Logger LOG = LoggerFactory.getLogger(DefaultSQLClearTableAction.class);
 
     private String[] fullTableName;
 
@@ -38,10 +38,10 @@ public class DefaultSQLClearTableAction extends TableAction {
 
         queries.add(getClearTableQuery());
 
-        if (log.isDebugEnabled()) {
-            log.debug("Generated SQL queries to clear table:");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Generated SQL queries to clear table:");
             for (String q : queries) {
-                log.debug(q);
+                LOG.debug(q);
             }
         }
 

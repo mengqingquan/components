@@ -12,7 +12,6 @@
 // ============================================================================
 package org.talend.components.common.tableaction;
 
-import org.apache.avro.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +21,7 @@ import java.util.List;
 
 public class DefaultSQLTruncateTableAction extends TableAction {
 
-    private final Logger log = LoggerFactory.getLogger(DefaultSQLTruncateTableAction.class);
+    private final static Logger LOG = LoggerFactory.getLogger(DefaultSQLTruncateTableAction.class);
 
     private String[] fullTableName;
 
@@ -41,10 +40,10 @@ public class DefaultSQLTruncateTableAction extends TableAction {
 
         queries.add(getTruncateTableQuery());
 
-        if (log.isDebugEnabled()) {
-            log.debug("Generated SQL queries to truncate table:");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Generated SQL queries to truncate table:");
             for (String q : queries) {
-                log.debug(q);
+                LOG.debug(q);
             }
         }
 

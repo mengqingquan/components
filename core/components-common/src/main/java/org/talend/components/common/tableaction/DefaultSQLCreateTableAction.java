@@ -23,7 +23,7 @@ import java.util.List;
 
 public class DefaultSQLCreateTableAction extends TableAction {
 
-    private final Logger log = LoggerFactory.getLogger(DefaultSQLCreateTableAction.class);
+    private final static Logger LOG = LoggerFactory.getLogger(DefaultSQLCreateTableAction.class);
 
     private String[] fullTableName;
 
@@ -62,10 +62,10 @@ public class DefaultSQLCreateTableAction extends TableAction {
 
         queries.add(getCreateTableQuery());
 
-        if (log.isDebugEnabled()) {
-            log.debug("Generated SQL queries for create fullTableName:");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Generated SQL queries for create fullTableName:");
             for (String q : queries) {
-                log.debug(q);
+                LOG.debug(q);
             }
         }
 
