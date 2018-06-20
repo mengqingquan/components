@@ -19,10 +19,12 @@ import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,6 +123,24 @@ public class ExcelUtils {
         }
 
         return fromFormula ? cellValue.formatAsString() : formatter.formatCellValue(cell);
+    }
+    
+    public static boolean isEmptyRow(Row row) {
+      if (row == null) {
+          return true;
+      }
+      
+      if (row.getLastCellNum() < 1) {
+          return true;
+      }
+      
+      for (int cellNum = row.getFirstCellNum(); cellNum < row.getLastCellNum(); cellNum++) {
+          Cell cell = row.getCell(cellNum);
+          if (cell != null && cell.getCellTypeEnum() != CellType.BLANK && StringUtils.isNotBlank(cell.toString())) {
+              return false;
+          }
+      }
+      return true;
     }
 
 }

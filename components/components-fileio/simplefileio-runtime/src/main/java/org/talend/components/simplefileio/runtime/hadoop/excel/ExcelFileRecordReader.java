@@ -157,7 +157,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     
     return fa.endRecord();
   }
-
+  
   private void init4Excel2007And97(InputStream in) throws IOException {
     try {
       workbook = WorkbookFactory.create(in);
@@ -196,7 +196,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     }
     
     //as only one task to process the excel as no split, so we can do that like this
-    if(headerRow!=null && headerRow.getLastCellNum() > 0) {
+    if(!ExcelUtils.isEmptyRow(headerRow)) {
       schema = createSchema(headerRow, false);
     }
   }
@@ -273,7 +273,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
 
     Row row = rowIterator.next();
     
-    if((row == null) || (row.getLastCellNum() < 1)) {
+    if(ExcelUtils.isEmptyRow(row)) {
       //skip empty rows
       return nextKeyValue();
     }
