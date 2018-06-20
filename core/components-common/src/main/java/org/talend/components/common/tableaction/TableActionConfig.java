@@ -12,6 +12,12 @@
 // ============================================================================
 package org.talend.components.common.tableaction;
 
+import org.apache.avro.LogicalType;
+import org.apache.avro.Schema;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class TableActionConfig {
 
     public boolean SQL_UPPERCASE_IDENTIFIER = false;
@@ -59,5 +65,11 @@ public class TableActionConfig {
     public String SQL_DELETE_PREFIX = "";
     public String SQL_DELETE_SUFFIX = "";
     public String SQL_DELETE = "DELETE FROM";
+
+    public Map<String, Integer> CONVERT_JAVATYPE_TO_SQLTYPE = new HashMap<>();
+    public Map<LogicalType, Integer> CONVERT_LOGICALTYPE_TO_SQLTYPE = new HashMap<>();
+    public Map<Schema.Type, Integer> CONVERT_AVROTYPE_TO_SQLTYPE = new HashMap<>();
+
+    public Map<Integer, String> CUSTOMIZE_SQLTYPE_TYPENAME = new HashMap<>();
 
 }

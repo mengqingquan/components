@@ -110,6 +110,7 @@ public class DefaultSQLCreateTableAction extends TableAction {
     }
 
     private StringBuilder buildColumns() {
+        ConvertAvroTypeToSQL convertAvroToSQL = new ConvertAvroTypeToSQL(this.getConfig());
         StringBuilder sb = new StringBuilder();
 
         boolean first = true;
@@ -137,9 +138,9 @@ public class DefaultSQLCreateTableAction extends TableAction {
 
             if (isNullOrEmpty(sDBType)) {
                 // If DB type not set, try to guess it
-                sDBType = ConvertAvroTypeToSQL.convertToSQLTypeString(f.schema());
+                sDBType = convertAvroToSQL.convertToSQLTypeString(f.schema());
             }
-            sb.append(sDBType);
+            sb.append(updateCaseIdentifier(sDBType));
 
             // Length
             if (this.getConfig().SQL_CREATE_TABLE_LENGTH_ENABLED && !isNullOrEmpty(sDBLength)) {

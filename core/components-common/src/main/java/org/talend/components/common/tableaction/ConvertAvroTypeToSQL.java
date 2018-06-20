@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class ConvertAvroTypeToSQL {
 
@@ -42,7 +43,18 @@ public class ConvertAvroTypeToSQL {
 
     private final static AvroRegistry avroRegistry = new AvroRegistry();
 
-    public final static String convertToSQLTypeString(Schema schema) {
+    private TableActionConfig config;
+
+    public ConvertAvroTypeToSQL(TableActionConfig config){
+        this.config = config;
+
+        Set<Map.Entry<Integer, String>> entries = this.config.CUSTOMIZE_SQLTYPE_TYPENAME.entrySet();
+        for(Map.Entry<Integer, String> e : entries){
+            SQLTypesMap.put(e.getKey(), e.getValue());
+        }
+    }
+
+    public String convertToSQLTypeString(Schema schema) {
         int sqlType = convertToSQLType(schema);
         String sType = SQLTypesMap.get(sqlType);
         if (sType == null) {
@@ -52,7 +64,7 @@ public class ConvertAvroTypeToSQL {
         return sType;
     }
 
-    public final static int convertToSQLType(Schema schema) {
+    public int convertToSQLType(Schema schema) {
         Schema.Type type = schema.getType(); // The standard Avro Type
         LogicalType logicalType = schema.getLogicalType(); // The logical type for Data by example
         String javaType = null;  // And the Talend java type if standard Avro type is Union
@@ -84,8 +96,11 @@ public class ConvertAvroTypeToSQL {
         return sqlType;
     }
 
-    private static int convertRawAvroType(Schema.Type type) {
-        int sqlType = Types.NULL;
+    private int convertRawAvroType(Schema.Type type) {
+        Integer sqlType = this.config.CONVERT_AVROTYPE_TO_SQLTYPE.get(type);
+        if(sqlType != null){
+            return sqlType;
+        }
 
         switch (type) {
         case STRING:
@@ -116,8 +131,12 @@ public class ConvertAvroTypeToSQL {
         return sqlType;
     }
 
-    private static int convertAvroLogicialType(LogicalType logicalType) {
-        int sqlType = Types.NULL;
+    private int convertAvroLogicialType(LogicalType logicalType) {
+
+        Integer sqlType = this.config.CONVERT_LOGICALTYPE_TO_SQLTYPE.get(logicalType);
+        if(sqlType != null){
+            return sqlType;
+        }
 
         if (logicalType == LogicalTypes.timestampMillis()) {
             sqlType = Types.TIMESTAMP;
@@ -140,9 +159,11 @@ public class ConvertAvroTypeToSQL {
         return sqlType;
     }
 
-    private static int convertTalendAvroType(String javaType) {
-
-        int sqlType = Types.NULL;
+    private int convertTalendAvroType(String javaType) {
+        Integer sqlType = this.config.CONVERT_JAVATYPE_TO_SQLTYPE.get(javaType);
+        if(sqlType != null){
+            return sqlType;
+        }
 
         switch (javaType) {
         case "java.lang.Byte":

@@ -1,43 +1,51 @@
 package org.talend.components.common.tableaction;
 
+import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
+import org.junit.Before;
 import org.junit.Test;
 import org.talend.daikon.avro.AvroUtils;
 import org.talend.daikon.avro.SchemaConstants;
 
+import java.sql.Types;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
 public class DefaultSQLCreateTableActionTest {
 
-    private static Schema schema = SchemaBuilder.builder()
-            .record("main")
-            .fields()
-            .name("id")
-            .prop(SchemaConstants.TALEND_COLUMN_IS_KEY, "true")
-            .type(AvroUtils._int())
-            .withDefault(1)
-            .name("name")
-            .prop(SchemaConstants.TALEND_COLUMN_IS_KEY, "true")
-            .prop(SchemaConstants.TALEND_COLUMN_DB_LENGTH, "255")
-            .prop(SchemaConstants.TALEND_COLUMN_DEFAULT, "\"ok\"")
-            .type(AvroUtils._string())
-            .noDefault()
-            .name("date")
-            .type(AvroUtils._logicalDate())
-            .noDefault()
-            .name("salary")
-            .prop(SchemaConstants.TALEND_COLUMN_DB_TYPE, "MY_DOUBLE")
-            .prop(SchemaConstants.TALEND_COLUMN_PRECISION, "38")
-            .prop(SchemaConstants.TALEND_COLUMN_SCALE, "4")
-            .type(AvroUtils._double())
-            .withDefault("0")
-            .name("updated")
-            .type(AvroUtils._logicalTimestamp())
-            .noDefault()
-            .endRecord();
+    private static Schema schema;
+
+    @Before
+    public void createSchema(){
+        schema = SchemaBuilder.builder()
+                .record("main")
+                .fields()
+                .name("id")
+                .prop(SchemaConstants.TALEND_COLUMN_IS_KEY, "true")
+                .type(AvroUtils._int())
+                .withDefault(1)
+                .name("name")
+                .prop(SchemaConstants.TALEND_COLUMN_IS_KEY, "true")
+                .prop(SchemaConstants.TALEND_COLUMN_DB_LENGTH, "255")
+                .prop(SchemaConstants.TALEND_COLUMN_DEFAULT, "\"ok\"")
+                .type(AvroUtils._string())
+                .noDefault()
+                .name("date")
+                .type(AvroUtils._logicalDate())
+                .noDefault()
+                .name("salary")
+                .prop(SchemaConstants.TALEND_COLUMN_DB_TYPE, "MY_DOUBLE")
+                .prop(SchemaConstants.TALEND_COLUMN_PRECISION, "38")
+                .prop(SchemaConstants.TALEND_COLUMN_SCALE, "4")
+                .type(AvroUtils._double())
+                .withDefault("0")
+                .name("updated")
+                .type(AvroUtils._logicalTimestamp())
+                .noDefault()
+                .endRecord();
+    }
 
     @Test
     public void createTable() {
@@ -227,4 +235,66 @@ public class DefaultSQLCreateTableActionTest {
             e.printStackTrace();
         }
     }
+
+    @Test
+    public void dropIfExistsNCreateTableUppercaseWithSQLConf() {
+        schema = SchemaBuilder.builder()
+                .record("main")
+                .fields()
+                .name("id")
+                .prop(SchemaConstants.TALEND_COLUMN_IS_KEY, "true")
+                .type(AvroUtils._int())
+                .withDefault(1)
+                .name("name")
+                .prop(SchemaConstants.TALEND_COLUMN_IS_KEY, "true")
+                .prop(SchemaConstants.TALEND_COLUMN_DB_LENGTH, "255")
+                .prop(SchemaConstants.TALEND_COLUMN_DEFAULT, "\"ok\"")
+                .type(AvroUtils._string())
+                .noDefault()
+                .name("date")
+                .type(AvroUtils._logicalDate())
+                .noDefault()
+                .name("salary")
+                .prop(SchemaConstants.TALEND_COLUMN_DB_TYPE, "MY_DOUBLE")
+                .prop(SchemaConstants.TALEND_COLUMN_PRECISION, "38")
+                .prop(SchemaConstants.TALEND_COLUMN_SCALE, "4")
+                .type(AvroUtils._double())
+                .withDefault("0")
+                .name("updated")
+                .type(AvroUtils._logicalTimestamp())
+                .noDefault()
+                .name("myvariant")
+                .type(SchemaBuilder.builder().record("record").fields().endRecord())
+                .noDefault()
+                .endRecord();
+
+
+        DefaultSQLCreateTableAction action =
+                new DefaultSQLCreateTableAction(new String[]{"MyTable"}, schema, false, false, true);
+        TableActionConfig conf = new TableActionConfig();
+
+        conf.CONVERT_JAVATYPE_TO_SQLTYPE.put("java.util.Date", -50001);
+        conf.CONVERT_LOGICALTYPE_TO_SQLTYPE.put(LogicalTypes.date(), -50001);
+        conf.CONVERT_AVROTYPE_TO_SQLTYPE.put(Schema.Type.RECORD, -50002);
+        conf.CUSTOMIZE_SQLTYPE_TYPENAME.put(-50001, "datetime_tz");
+        conf.CUSTOMIZE_SQLTYPE_TYPENAME.put(-50002, "VARIANT");
+
+        conf.SQL_DROP_TABLE_SUFFIX = " CASCADE";
+        conf.SQL_UPPERCASE_IDENTIFIER = true;
+        conf.SQL_ESCAPE_ENABLED = false;
+
+        action.setConfig(conf);
+
+        try {
+            List<String> queries = action.getQueries();
+            assertEquals(2, queries.size());
+            assertEquals("DROP TABLE IF EXISTS MYTABLE CASCADE", queries.get(0));
+            assertEquals(
+                    "CREATE TABLE MYTABLE (ID NUMERIC, NAME VARCHAR(255) DEFAULT \"ok\", DATE DATETIME_TZ, SALARY MY_DOUBLE(38, 4), UPDATED TIMESTAMP, MYVARIANT VARIANT, CONSTRAINT pk_MYTABLE PRIMARY KEY (ID, NAME))",
+                    queries.get(1));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
