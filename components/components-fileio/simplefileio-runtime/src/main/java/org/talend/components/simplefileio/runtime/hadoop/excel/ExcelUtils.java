@@ -14,6 +14,8 @@
 package org.talend.components.simplefileio.runtime.hadoop.excel;
 
 import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
@@ -99,13 +101,14 @@ public class ExcelUtils {
     }
 
     //TODO configurable?
-    private static final DateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
+    //private static final DateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);//this is the one dataprep use for excel 97
+    private static final DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
     
     //TODO use this for number?
-    //private static DecimalFormat df = new DecimalFormat("#.####################################");
+    private static DecimalFormat df = new DecimalFormat("#.####################################", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
     
     //Numeric type (use data formatter to get number format right)
-    private static final DataFormatter formatter = new DataFormatter(Locale.ENGLISH);
+    //private static final DataFormatter formatter = new DataFormatter(Locale.ENGLISH);//this is the one dataprep use for excel 97
     
     /**
      * Return the numeric value.
@@ -119,10 +122,10 @@ public class ExcelUtils {
         }
         
         if (cellValue == null) {
-            return formatter.formatCellValue(cell);
+            return df.format(cell.getNumericCellValue());
         }
 
-        return fromFormula ? cellValue.formatAsString() : formatter.formatCellValue(cell);
+        return fromFormula ? cellValue.formatAsString() : df.format(cell.getNumericCellValue());
     }
     
     public static boolean isEmptyRow(Row row) {
