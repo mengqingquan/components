@@ -76,7 +76,8 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
   private List<List<String>> rows;
   private Iterator<List<String>> htmlRowIterator;
   
-  private boolean isExcel2007WithoutFooter;
+  //use stream api for excel 2007 for support huge excel
+  private boolean isExcel2007;
 
   public ExcelFileRecordReader() {
   }
@@ -88,7 +89,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     this.footer = footer;
     this.isHtml = "HTML".equals(excelFormat);
     
-    isExcel2007WithoutFooter = "EXCEL2007".equals(excelFormat) && (footer < 1);
+    isExcel2007 = "EXCEL2007".equals(excelFormat);
   }
 
   public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException {
@@ -97,23 +98,29 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
 
     final Path file = split.getPath();
 
+    InputStream in = createInputStream(job, file);
+    
+    if(isHtml) {
+      init4ExcelHtml(in);
+      return;
+    } else if(isExcel2007) {
+      init4Excel2007(in, job, file);
+      return;
+    }
+    
+    init4Excel97(in);
+  }
+
+  private InputStream createInputStream(Configuration job, final Path file) throws IOException {
     final FileSystem fs = file.getFileSystem(job);
     InputStream in = fs.open(file);
 
     CompressionCodec codec = new CompressionCodecFactory(job).getCodec(file);
     if (null != codec) {
+      decompressor = CodecPool.getDecompressor(codec);
       in = codec.createInputStream(in, decompressor);
     }
-    
-    if(isHtml) {
-      init4ExcelHtml(in);
-      return;
-    } else if(isExcel2007WithoutFooter) {
-      init4Excel2007(in);
-      return;
-    }
-    
-    init4Excel97AndExcel2007WithFooter(in);
+    return in;
   }
 
   private void init4ExcelHtml(InputStream in) {
@@ -169,7 +176,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     return fa.endRecord();
   }
   
-  private void init4Excel97AndExcel2007WithFooter(InputStream in) throws IOException {
+  private void init4Excel97(InputStream in) throws IOException {
     try {
       workbook = WorkbookFactory.create(in);
     } catch (EncryptedDocumentException | InvalidFormatException e) {
@@ -212,20 +219,28 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     }
   }
   
-  private void init4Excel2007(InputStream in) throws IOException {
-    stream_workbook = StreamingReader.builder()
-        .bufferSize(4096)
-        .rowCacheSize(1)
-        .open(in);
+  private void init4Excel2007(InputStream in, Configuration job, Path file) throws IOException {
+    Sheet sheet = initStreamWorkbookAndSheet(in);
 
-    Sheet sheet = StringUtils.isEmpty(this.sheetName) ?
-        stream_workbook.getSheetAt(0) : stream_workbook.getSheet(this.sheetName);
-
-    if (sheet == null) {
-      throw new RuntimeException("can't find the sheet : " + sheetName);
-    }
-    
     endRow = Long.MAX_VALUE;
+    if(footer > 0) {
+      try {
+        //read the whole file one time by stream for get the end row
+        long rowNum = 0;
+        for(Row row : sheet) {
+          rowNum++;
+        }
+        
+        endRow = rowNum - footer;
+      } finally {
+        if(stream_workbook != null) {
+          stream_workbook.close();
+        }
+      }
+      
+      //recreate the stream sheet for the second time to read
+      sheet = initStreamWorkbookAndSheet(this.createInputStream(job, file));
+    }
 
     // skip header
     rowIterator = sheet.iterator();
@@ -243,6 +258,22 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
       schema = createSchema(headerRow, false);
     }
   }
+
+  private Sheet initStreamWorkbookAndSheet(InputStream in) {
+    stream_workbook = StreamingReader.builder()
+        .bufferSize(4096)
+        .rowCacheSize(1)
+        .open(in);
+
+    Sheet sheet = StringUtils.isEmpty(this.sheetName) ?
+        stream_workbook.getSheetAt(0) : stream_workbook.getSheet(this.sheetName);
+        
+    if (sheet == null) {
+      throw new RuntimeException("can't find the sheet : " + sheetName);
+    }
+    
+    return sheet;
+  }
   
   private static final String RECORD_NAME = "StringArrayRecord";
 
@@ -257,7 +288,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
       
       int i = 0;
       for (Cell cell : headerRow) {
-          String fieldName = validName ? (isExcel2007WithoutFooter ? (cell == null ? StringUtils.EMPTY : cell.getStringCellValue()) : ExcelUtils.getCellValueAsString(cell, formulaEvaluator)) : (FIELD_PREFIX + (i++));
+          String fieldName = validName ? (isExcel2007 ? (cell == null ? StringUtils.EMPTY : cell.getStringCellValue()) : ExcelUtils.getCellValueAsString(cell, formulaEvaluator)) : (FIELD_PREFIX + (i++));
           
           String finalName = NameUtil.correct(fieldName, index++, existNames);
           existNames.add(finalName);
@@ -278,10 +309,10 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     
     if(isHtml) {
       return nextKeyValue4ExcelHtml();
-    } else if(isExcel2007WithoutFooter) {
+    } else if(isExcel2007) {
       return nextKeyValue4Excel2007();
     }
-    return nextKeyValue4Excel97AndExcel2007WithFooter();
+    return nextKeyValue4Excel97();
   }
   
   private boolean nextKeyValue4ExcelHtml() {
@@ -343,7 +374,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     return true;
   }
   
-  private boolean nextKeyValue4Excel97AndExcel2007WithFooter() throws IOException {
+  private boolean nextKeyValue4Excel97() throws IOException {
     if (!rowIterator.hasNext()) {
       return false;
     }
