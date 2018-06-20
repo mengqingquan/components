@@ -13,6 +13,7 @@ import org.apache.avro.Schema.Field;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.IndexedRecord;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -34,6 +35,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.talend.components.simplefileio.runtime.hadoop.excel.streaming.StreamingReader;
 import org.talend.daikon.avro.NameUtil;
 
 /**
@@ -47,6 +49,8 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
   private static final Log LOG = LogFactory.getLog(ExcelFileRecordReader.class);
 
   private Workbook workbook;
+  
+  private Workbook stream_workbook;
   
   private Sheet sheet;
 
@@ -71,6 +75,8 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
   private boolean isHtml;
   private List<List<String>> rows;
   private Iterator<List<String>> htmlRowIterator;
+  
+  private boolean isExcel2007WithoutFooter;
 
   public ExcelFileRecordReader() {
   }
@@ -81,6 +87,8 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     this.header = header;
     this.footer = footer;
     this.isHtml = "HTML".equals(excelFormat);
+    
+    isExcel2007WithoutFooter = "EXCEL2007".equals(excelFormat) && (footer < 1);
   }
 
   public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException {
@@ -100,9 +108,12 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     if(isHtml) {
       init4ExcelHtml(in);
       return;
+    } else if(isExcel2007WithoutFooter) {
+      init4Excel2007(in);
+      return;
     }
     
-    init4Excel2007And97(in);
+    init4Excel97AndExcel2007WithFooter(in);
   }
 
   private void init4ExcelHtml(InputStream in) {
@@ -158,7 +169,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     return fa.endRecord();
   }
   
-  private void init4Excel2007And97(InputStream in) throws IOException {
+  private void init4Excel97AndExcel2007WithFooter(InputStream in) throws IOException {
     try {
       workbook = WorkbookFactory.create(in);
     } catch (EncryptedDocumentException | InvalidFormatException e) {
@@ -201,6 +212,38 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     }
   }
   
+  private void init4Excel2007(InputStream in) throws IOException {
+    stream_workbook = StreamingReader.builder()
+        .bufferSize(4096)
+        .rowCacheSize(1)
+        .open(in);
+
+    Sheet sheet = StringUtils.isEmpty(this.sheetName) ?
+        stream_workbook.getSheetAt(0) : stream_workbook.getSheet(this.sheetName);
+
+    if (sheet == null) {
+      throw new RuntimeException("can't find the sheet : " + sheetName);
+    }
+    
+    endRow = Long.MAX_VALUE;
+
+    // skip header
+    rowIterator = sheet.iterator();
+    
+    //we use it to fetch the schema
+    Row headerRow = null;
+    
+    while ((header--) > 0 && rowIterator.hasNext()) {
+      currentRow++;
+      headerRow = rowIterator.next();
+    }
+    
+    //as only one task to process the excel as no split, so we can do that like this
+    if(!ExcelUtils.isEmptyRow4Stream(headerRow)) {
+      schema = createSchema(headerRow, false);
+    }
+  }
+  
   private static final String RECORD_NAME = "StringArrayRecord";
 
   private static final String FIELD_PREFIX = "field";
@@ -212,8 +255,9 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
       Set<String> existNames = new HashSet<String>();
       int index = 0;
       
-      for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-          String fieldName = validName ? ExcelUtils.getCellValueAsString(headerRow.getCell(i), formulaEvaluator) : (FIELD_PREFIX + i);
+      int i = 0;
+      for (Cell cell : headerRow) {
+          String fieldName = validName ? (isExcel2007WithoutFooter ? (cell == null ? StringUtils.EMPTY : cell.getStringCellValue()) : ExcelUtils.getCellValueAsString(cell, formulaEvaluator)) : (FIELD_PREFIX + (i++));
           
           String finalName = NameUtil.correct(fieldName, index++, existNames);
           existNames.add(finalName);
@@ -234,8 +278,10 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     
     if(isHtml) {
       return nextKeyValue4ExcelHtml();
+    } else if(isExcel2007WithoutFooter) {
+      return nextKeyValue4Excel2007();
     }
-    return nextKeyValue4Excel2007And97();
+    return nextKeyValue4Excel97AndExcel2007WithFooter();
   }
   
   private boolean nextKeyValue4ExcelHtml() {
@@ -264,7 +310,40 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     return true;
   }
 
-  private boolean nextKeyValue4Excel2007And97() throws IOException {
+  private boolean nextKeyValue4Excel2007() throws IOException {
+    if (!rowIterator.hasNext()) {
+      return false;
+    }
+
+    currentRow++;
+
+    Row row = rowIterator.next();
+    
+    if(ExcelUtils.isEmptyRow4Stream(row)) {
+      //skip empty rows
+      return nextKeyValue();
+    }
+
+    //if not fill the schema before as no header or invalid header, set it here and as no valid name as no header, so set a name like this : field1,field2,field3
+    if(schema == null) {
+      schema = createSchema(row, false);
+    }
+    value = new GenericData.Record(schema);
+    
+    List<Field> fields = schema.getFields();
+    
+    int i = 0;
+    for (Cell cell : row) {
+      if(i < fields.size()) {
+        String content = cell == null ? StringUtils.EMPTY : cell.getStringCellValue();
+        value.put(i++, content);
+      }
+    }
+
+    return true;
+  }
+  
+  private boolean nextKeyValue4Excel97AndExcel2007WithFooter() throws IOException {
     if (!rowIterator.hasNext()) {
       return false;
     }
@@ -319,6 +398,10 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     try {
       if (workbook != null) {
         workbook.close();
+      }
+      
+      if(stream_workbook != null) {
+        stream_workbook.close();
       }
     } finally {
       if (decompressor != null) {

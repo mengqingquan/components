@@ -142,5 +142,18 @@ public class ExcelUtils {
       }
       return true;
     }
+    
+    public static boolean isEmptyRow4Stream(Row row) {
+      if (row == null) {
+          return true;
+      }
+      
+      for (Cell cell : row) {
+          if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK  && StringUtils.isNotBlank(cell.toString())) {
+              return false;
+          }
+      }
+      return true;
+    }
 
 }

@@ -232,6 +232,25 @@
         </dependency>
         -->
         <dependency>
+	    	<groupId>com.monitorjbl</groupId>
+		    <artifactId>xlsx-streamer</artifactId>
+		    <version>1.0.0</version>
+		    <exclusions>
+                <exclusion>
+		      		<groupId>org.apache.poi</groupId>
+		      		<artifactId>poi-ooxml</artifactId>
+			    </exclusion>
+			    <exclusion>
+			      	<groupId>xerces</groupId>
+			      	<artifactId>xercesImpl</artifactId>
+			    </exclusion>
+			    <exclusion>
+			      	<groupId>org.slf4j</groupId>
+			      	<artifactId>slf4j-api</artifactId>
+			    </exclusion>
+            </exclusions>
+	  	</dependency>
+        <dependency>
     		<groupId>org.apache.tika</groupId>
 		    <artifactId>tika-parsers</artifactId>
 	    	<version>${tika.version}</version>

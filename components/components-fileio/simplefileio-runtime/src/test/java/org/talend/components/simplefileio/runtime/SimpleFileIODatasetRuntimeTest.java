@@ -560,6 +560,7 @@ public class SimpleFileIODatasetRuntimeTest {
         SimpleFileIODatasetProperties props = createDatasetProperties();
         props.path.setValue(fileSpec);
         props.format.setValue(SimpleFileIOFormat.EXCEL);
+        props.excelFormat.setValue(ExcelFormat.EXCEL97);
         props.sheet.setValue("Sheet1");
 
         // Create the runtime.
