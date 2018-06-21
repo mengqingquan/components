@@ -75,7 +75,7 @@ public class ConvertAvroTypeToSQL {
                 if (s.getType() != Schema.Type.NULL) {
                     type = s.getType();
                     javaType = s.getProp(SchemaConstants.JAVA_CLASS_FLAG);
-                    logicalType = schema.getLogicalType();
+                    logicalType = s.getLogicalType();
                     if (javaType == null && logicalType == null) {
                         type = s.getType(); // Get Avro type if JAVA_CLASS_FLAG is not defined
                     }
