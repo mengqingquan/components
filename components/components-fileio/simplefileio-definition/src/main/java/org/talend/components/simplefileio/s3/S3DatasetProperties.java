@@ -309,11 +309,7 @@ public class S3DatasetProperties extends PropertiesImpl implements DatasetProper
     }
     
     public String getSheetName() {
-        String sheetName = this.sheet.getValue();
-        if((excelFormat.getValue() != ExcelFormat.HTML) && (sheetName == null || sheetName.isEmpty())) {
-          throw new RuntimeException("please set the sheet name, it's necessary");
-        }
-        return sheetName;
+        return this.sheet.getValue();
     }
     
     public ExcelFormat getExcelFormat() {
