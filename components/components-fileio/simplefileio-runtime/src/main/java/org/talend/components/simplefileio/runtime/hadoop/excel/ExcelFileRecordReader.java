@@ -140,6 +140,11 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     header = Math.max(1, header);
     boolean isSchemaHeader = header < 2;
     
+    //no data row, only footer, header, then exception notice
+    if(header >= endRow) {
+      throw new RuntimeException("no enough data row as header or footer value is too large, please reset them");
+    }
+    
     htmlRowIterator = rows.iterator();
     
     //we use it to fetch the schema
@@ -148,6 +153,10 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     while ((header--) > 0 && htmlRowIterator.hasNext()) {
       currentRow++;
       headerRow = htmlRowIterator.next();
+    }
+    
+    if(!htmlRowIterator.hasNext()) {
+      throw new RuntimeException("no enough data row as header or footer value is too large, please reset them");
     }
     
     //as only one task to process the excel as no split, so we can do that like this
@@ -200,7 +209,13 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     
     formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
 
-    endRow = sheet.getLastRowNum() + 1 - footer;
+    //getLastRowNum start from 0, and if empty sheet or 1 row sheet, both return 0, it's not good
+    endRow = sheet.getPhysicalNumberOfRows() - footer;
+    
+    //no data row, only footer, header, then exception notice
+    if(header >= endRow) {
+      throw new RuntimeException("no enough data row as header or footer value is too large, please reset them");
+    }
 
     // skip header
     rowIterator = sheet.iterator();
@@ -211,6 +226,10 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     while ((header--) > 0 && rowIterator.hasNext()) {
       currentRow++;
       headerRow = rowIterator.next();
+    }
+    
+    if(!rowIterator.hasNext()) {
+      throw new RuntimeException("no enough data row as header or footer value is too large, please reset them");
     }
     
     //as only one task to process the excel as no split, so we can do that like this
@@ -238,6 +257,11 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
         }
       }
       
+      //no data row, only footer, header, then exception notice
+      if(header >= endRow) {
+        throw new RuntimeException("no enough data row as header or footer value is too large, please reset them");
+      }
+      
       //recreate the stream sheet for the second time to read
       sheet = initStreamWorkbookAndSheet(this.createInputStream(job, file));
     }
@@ -251,6 +275,10 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     while ((header--) > 0 && rowIterator.hasNext()) {
       currentRow++;
       headerRow = rowIterator.next();
+    }
+    
+    if(!rowIterator.hasNext()) {
+      throw new RuntimeException("no enough data row as header or footer value is too large, please reset them");
     }
     
     //as only one task to process the excel as no split, so we can do that like this
