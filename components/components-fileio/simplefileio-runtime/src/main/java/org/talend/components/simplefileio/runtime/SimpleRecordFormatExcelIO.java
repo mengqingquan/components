@@ -12,24 +12,17 @@
 // ============================================================================
 package org.talend.components.simplefileio.runtime;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.beam.sdk.io.Read;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
-import org.apache.hadoop.io.Writable;
 import org.talend.components.adapter.beam.coders.LazyAvroCoder;
 import org.talend.components.simplefileio.ExcelFormat;
 import org.talend.components.simplefileio.runtime.sources.ExcelHdfsFileSource;
 import org.talend.components.simplefileio.runtime.ugi.UgiDoAs;
-import org.talend.daikon.avro.converter.IndexedRecordConverter;
 
 public class SimpleRecordFormatExcelIO extends SimpleRecordFormatBase {
 
@@ -43,7 +36,7 @@ public class SimpleRecordFormatExcelIO extends SimpleRecordFormatBase {
     private final long header;
     private final long footer;
     private final ExcelFormat excelFormat;
-
+    
     public SimpleRecordFormatExcelIO(UgiDoAs doAs, String path, boolean overwrite, int limit, boolean mergeOutput, String encoding, String sheetName, long header, long footer, ExcelFormat excelFormat) {
         super(doAs, path, overwrite, limit, mergeOutput);
         this.sheetName = sheetName;
@@ -57,7 +50,7 @@ public class SimpleRecordFormatExcelIO extends SimpleRecordFormatBase {
     public PCollection<IndexedRecord> read(PBegin in) {
         LazyAvroCoder<IndexedRecord> lac = LazyAvroCoder.of();
         
-        ExcelHdfsFileSource source = ExcelHdfsFileSource.of(doAs, path, lac, encoding, sheetName, header, footer, excelFormat.name());
+        ExcelHdfsFileSource source = ExcelHdfsFileSource.of(doAs, path, lac, limit, encoding, sheetName, header, footer, excelFormat.name());
         source.getExtraHadoopConfiguration().addFrom(getExtraHadoopConfiguration());
         source.setLimit(limit);
         PCollection<KV<Void, IndexedRecord>> pc1 = in.apply(Read.from(source)).setCoder(source.getDefaultOutputCoder());

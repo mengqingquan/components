@@ -21,6 +21,8 @@ public class ExcelFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.
   public static String TALEND_FOOTER = "talend_excel_footer";
   
   public static String TALEND_EXCEL_FORMAT = "talend_excel_format";
+  
+  public static String TALEND_EXCEL_LIMIT = "talend_excel_limit";
 
   private static final Log LOG = LogFactory.getLog(ExcelFileInputFormat.class);
 
@@ -31,7 +33,8 @@ public class ExcelFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.
     long header = context.getConfiguration().getLong(TALEND_HEADER, 0l);
     long footer = context.getConfiguration().getLong(TALEND_FOOTER, 0l);
     String excelFormat = context.getConfiguration().get(TALEND_EXCEL_FORMAT, "EXCEL2007");
-    return new ExcelFileRecordReader(encoding, sheet, header, footer, excelFormat);
+    long limit = context.getConfiguration().getLong(TALEND_EXCEL_LIMIT, -1);
+    return new ExcelFileRecordReader(encoding, sheet, header, footer, excelFormat, limit);
   }
 
   @Override

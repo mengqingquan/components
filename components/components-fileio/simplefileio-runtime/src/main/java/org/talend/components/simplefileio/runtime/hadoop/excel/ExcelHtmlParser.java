@@ -15,8 +15,8 @@ public class ExcelHtmlParser {
 
   // TODO make it stream and apply limit for performance, but how to do for
   // data-stream?
-  public static List<List<String>> getRows(InputStream rawContent, String encoding) {
-    SimpleValuesContentHandler valuesContentHandler = new SimpleValuesContentHandler(-1, Long.MAX_VALUE);
+  public static List<List<String>> getRows(InputStream rawContent, String encoding, long limit) {
+    SimpleValuesContentHandler valuesContentHandler = new SimpleValuesContentHandler(-1, limit);
 
     HtmlParser htmlParser = new HtmlParser();
     Metadata metadata = new Metadata();

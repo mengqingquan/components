@@ -78,15 +78,19 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
   
   //use stream api for excel 2007 for support huge excel
   private boolean isExcel2007;
+  
+  private long limit;
 
   public ExcelFileRecordReader() {
   }
 
-  public ExcelFileRecordReader(String encoding, String sheet, long header, long footer, String excelFormat) throws UnsupportedEncodingException {
+  public ExcelFileRecordReader(String encoding, String sheet, long header, long footer, String excelFormat, long limit) throws UnsupportedEncodingException {
     this.encoding = encoding;
     this.sheetName = sheet;
     this.header = header;
     this.footer = footer;
+    this.limit = limit;
+    this.limitCount = limit;
     this.isHtml = "HTML".equals(excelFormat);
     
     isExcel2007 = "EXCEL2007".equals(excelFormat);
@@ -124,8 +128,9 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
   }
 
   private void init4ExcelHtml(InputStream in) {
+    long limit4Parser = limit < 1 ? -1 : (header + footer + (limit + 2));
     try {
-      rows = ExcelHtmlParser.getRows(in, this.encoding);
+      rows = ExcelHtmlParser.getRows(in, this.encoding, limit4Parser);
     } finally {
       try {
         in.close();
@@ -330,7 +335,20 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
 
   private Schema schema;
   
+  
+  private long limitCount = 0;
+  
   public boolean nextKeyValue() throws IOException {
+    boolean hasNext = next();
+    
+    if((limit > 0) && ((limitCount--) < 1)) {
+      return false;
+    }
+    
+    return hasNext;
+  }
+
+  private boolean next() throws IOException {
     if (currentRow >= endRow) {
       return false;
     }
@@ -380,7 +398,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     
     if(ExcelUtils.isEmptyRow4Stream(row)) {
       //skip empty rows
-      return nextKeyValue();
+      return next();
     }
 
     //if not fill the schema before as no header or invalid header, set it here and as no valid name as no header, so set a name like this : field1,field2,field3
@@ -413,7 +431,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     
     if(ExcelUtils.isEmptyRow(row)) {
       //skip empty rows
-      return nextKeyValue();
+      return next();
     }
 
     //if not fill the schema before as no header or invalid header, set it here and as no valid name as no header, so set a name like this : field1,field2,field3

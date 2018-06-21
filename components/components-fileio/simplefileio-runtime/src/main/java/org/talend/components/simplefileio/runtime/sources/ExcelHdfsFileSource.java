@@ -35,7 +35,7 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, IndexedRecord, Exc
     
     private final LazyAvroCoder<IndexedRecord> lac;
 
-    private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, LazyAvroCoder<IndexedRecord> lac, String encoding, String sheetName, long header, long footer, String excelFormat, ExtraHadoopConfiguration extraConfig,
+    private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, LazyAvroCoder<IndexedRecord> lac, int limit, String encoding, String sheetName, long header, long footer, String excelFormat, ExtraHadoopConfiguration extraConfig,
             SerializableSplit serializableSplit) {
         super(doAs, filepattern, ExcelFileInputFormat.class, Void.class, IndexedRecord.class, extraConfig, serializableSplit);
         
@@ -48,6 +48,9 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, IndexedRecord, Exc
         hadoop_config.set(ExcelFileInputFormat.TALEND_HEADER, String.valueOf(header));
         hadoop_config.set(ExcelFileInputFormat.TALEND_FOOTER, String.valueOf(footer));
         hadoop_config.set(ExcelFileInputFormat.TALEND_EXCEL_FORMAT, excelFormat);
+        
+        //set it to the reader for performance
+        hadoop_config.set(ExcelFileInputFormat.TALEND_EXCEL_LIMIT, String.valueOf(limit));
     }
 
     private ExcelHdfsFileSource(UgiDoAs doAs, String filepattern, LazyAvroCoder<IndexedRecord> lac, ExtraHadoopConfiguration extraConfig,
@@ -59,8 +62,8 @@ public class ExcelHdfsFileSource extends FileSourceBase<Void, IndexedRecord, Exc
     }
 
     //call by client, used to set the ExtraHadoopConfiguration : extraConfig major
-    public static ExcelHdfsFileSource of(UgiDoAs doAs, String filepattern, LazyAvroCoder<IndexedRecord> lac, String encoding, String sheetName, long header, long footer, String excelFormat) {
-        return new ExcelHdfsFileSource(doAs, filepattern, lac, encoding, sheetName, header, footer, excelFormat, new ExtraHadoopConfiguration(), null);
+    public static ExcelHdfsFileSource of(UgiDoAs doAs, String filepattern, LazyAvroCoder<IndexedRecord> lac, int limit, String encoding, String sheetName, long header, long footer, String excelFormat) {
+        return new ExcelHdfsFileSource(doAs, filepattern, lac, limit, encoding, sheetName, header, footer, excelFormat, new ExtraHadoopConfiguration(), null);
     }
 
     //call back by framework only, we call construct to set the parameter in ExtraHadoopConfiguration : extraConfig object before it
