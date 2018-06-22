@@ -102,17 +102,22 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
 
     final Path file = split.getPath();
 
-    InputStream in = createInputStream(job, file);
-    
-    if(isHtml) {
-      init4ExcelHtml(in);
-      return;
-    } else if(isExcel2007) {
-      init4Excel2007(in, job, file);
-      return;
+    try {
+      InputStream in = createInputStream(job, file);
+      
+      if(isHtml) {
+        init4ExcelHtml(in);
+        return;
+      } else if(isExcel2007) {
+        init4Excel2007(in, job, file);
+        return;
+      }
+      
+      init4Excel97(in);
+    } catch (Exception e) {
+      closeResource();
+      throw e;
     }
-    
-    init4Excel97(in);
   }
 
   private InputStream createInputStream(Configuration job, final Path file) throws IOException {
@@ -132,11 +137,7 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     try {
       rows = ExcelHtmlParser.getRows(in, this.encoding, limit4Parser);
     } finally {
-      try {
-        in.close();
-      } catch (IOException e) {
-        LOG.warn("Failed to close the stream : " + e);
-      }
+      closeStream(in);
     }
     
     endRow = rows.size() - footer;
@@ -195,6 +196,8 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
       workbook = WorkbookFactory.create(in);
     } catch (EncryptedDocumentException | InvalidFormatException e) {
       throw new RuntimeException("failed to create workbook object : " + e.getMessage());
+    } finally {
+      closeStream(in);
     }
 
     if(workbook.getNumberOfSheets() > 0) {
@@ -240,6 +243,14 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
     //as only one task to process the excel as no split, so we can do that like this
     if(!ExcelUtils.isEmptyRow(headerRow)) {
       schema = createSchema(headerRow, false);
+    }
+  }
+
+  private void closeStream(InputStream in) {
+    try {
+      in.close();
+    } catch (IOException e) {
+      LOG.warn("Failed to close the stream : " + e);
     }
   }
   
@@ -472,13 +483,19 @@ public class ExcelFileRecordReader extends RecordReader<Void, IndexedRecord> {
   }
 
   public synchronized void close() throws IOException {
+    closeResource();
+  }
+
+  private void closeResource() throws IOException {
     try {
       if (workbook != null) {
         workbook.close();
+        workbook = null;
       }
       
       if(stream_workbook != null) {
         stream_workbook.close();
+        stream_workbook = null;
       }
     } finally {
       if (decompressor != null) {
