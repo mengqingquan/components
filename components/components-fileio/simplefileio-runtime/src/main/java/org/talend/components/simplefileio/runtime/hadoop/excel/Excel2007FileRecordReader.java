@@ -110,6 +110,7 @@ public class Excel2007FileRecordReader extends RecordReader<Void, IndexedRecord>
       } finally {
         if(stream_workbook != null) {
           stream_workbook.close();
+          stream_workbook = null;
         }
       }
       
@@ -144,13 +145,22 @@ public class Excel2007FileRecordReader extends RecordReader<Void, IndexedRecord>
   }
 
   private Sheet initStreamWorkbookAndSheet(InputStream in) {
+    Sheet sheet = null;
+    
     stream_workbook = StreamingReader.builder()
         .bufferSize(4096)
         .rowCacheSize(1)
         .open(in);
 
-    Sheet sheet = StringUtils.isEmpty(this.sheetName) ?
-        stream_workbook.getSheetAt(0) : stream_workbook.getSheet(this.sheetName);
+    try {
+      if(StringUtils.isEmpty(this.sheetName)) {
+        sheet = stream_workbook.getSheetAt(0);
+      } else {
+        sheet = stream_workbook.getSheet(this.sheetName);
+      }
+    } catch (Exception e) {
+      //ignore it
+    }
         
     if (sheet == null) {
       throw new RuntimeException("can't find the sheet : " + sheetName);

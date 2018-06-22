@@ -13,6 +13,7 @@ import org.apache.avro.Schema.Field;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.IndexedRecord;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -110,12 +111,15 @@ public class Excel97FileRecordReader extends RecordReader<Void, IndexedRecord> {
     }
 
     if(workbook.getNumberOfSheets() > 0) {
-      sheet = workbook.getSheetAt(0);
-      for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-        String sheetName = workbook.getSheetName(i);
-        if (sheetName.equals(this.sheetName)) {
-          sheet = workbook.getSheetAt(i);
-          break;
+      if(StringUtils.isEmpty(this.sheetName)) {
+        sheet = workbook.getSheetAt(0);
+      } else {
+        for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+          String sheetName = workbook.getSheetName(i);
+          if (sheetName.equals(this.sheetName)) {
+            sheet = workbook.getSheetAt(i);
+            break;
+          }
         }
       }
     }
