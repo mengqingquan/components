@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 public class ExcelFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.FileInputFormat<Void, IndexedRecord> {
@@ -27,14 +28,23 @@ public class ExcelFileInputFormat extends org.apache.hadoop.mapreduce.lib.input.
   private static final Log LOG = LogFactory.getLog(ExcelFileInputFormat.class);
 
   @Override
-  public ExcelFileRecordReader createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException {
+  public RecordReader<Void, IndexedRecord> createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException {
     String encoding = context.getConfiguration().get(TALEND_ENCODING);
     String sheet = context.getConfiguration().get(TALEND_EXCEL_SHEET_NAME);
     long header = context.getConfiguration().getLong(TALEND_HEADER, 0l);
     long footer = context.getConfiguration().getLong(TALEND_FOOTER, 0l);
     String excelFormat = context.getConfiguration().get(TALEND_EXCEL_FORMAT, "EXCEL2007");
     long limit = context.getConfiguration().getLong(TALEND_EXCEL_LIMIT, -1);
-    return new ExcelFileRecordReader(encoding, sheet, header, footer, excelFormat, limit);
+    
+    if("EXCEL2007".equals(excelFormat)) {
+      return new Excel2007FileRecordReader(sheet, header, footer, limit);
+    } else if("EXCEL97".equals(excelFormat)) {
+      return new Excel97FileRecordReader(sheet, header, footer, limit);
+    } else if("HTML".equals(excelFormat)) {
+      return new ExcelHTMLFileRecordReader(encoding, header, footer, limit);
+    }
+    
+    throw new IOException("not a valid excel format");
   }
 
   @Override
