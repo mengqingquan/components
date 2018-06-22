@@ -31,6 +31,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.talend.components.simplefileio.runtime.hadoop.excel.streaming.StreamingReader;
 import org.talend.daikon.avro.NameUtil;
 
@@ -170,6 +171,8 @@ public class Excel2007FileRecordReader extends RecordReader<Void, IndexedRecord>
       int index = 0;
       
       int i = 0;
+      //this way will skip empty cell, but for header fetch, we have to depend on it, suppose header must be valid, no empty cell
+      //but for row retrieve, we will not use it, use getCell(index) to fetch cell even it's empty, not skip
       for (Cell cell : headerRow) {
           String fieldName = validName ? (cell == null ? StringUtils.EMPTY : cell.getStringCellValue()) : (FIELD_PREFIX + (i++));
           
@@ -228,12 +231,10 @@ public class Excel2007FileRecordReader extends RecordReader<Void, IndexedRecord>
     
     List<Field> fields = schema.getFields();
     
-    int i = 0;
-    for (Cell cell : row) {
-      if(i < fields.size()) {
-        String content = cell == null ? StringUtils.EMPTY : cell.getStringCellValue();
-        value.put(i++, content);
-      }
+    for (int i=0; i<fields.size(); i++) {
+      Cell cell = row.getCell(i);
+      String content = cell == null ? StringUtils.EMPTY : cell.getStringCellValue();
+      value.put(i, content);
     }
 
     return true;

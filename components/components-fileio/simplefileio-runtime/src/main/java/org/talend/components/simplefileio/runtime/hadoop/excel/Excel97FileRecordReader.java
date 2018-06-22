@@ -34,6 +34,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.talend.daikon.avro.NameUtil;
 
 public class Excel97FileRecordReader extends RecordReader<Void, IndexedRecord> {
@@ -174,6 +175,8 @@ public class Excel97FileRecordReader extends RecordReader<Void, IndexedRecord> {
       int index = 0;
       
       int i = 0;
+      //this way will skip empty cell, but for header fetch, we have to depend on it, suppose header must be valid, no empty cell
+      //but for row retrieve, we will not use it, use getCell(index) to fetch cell even it's empty, not skip
       for (Cell cell : headerRow) {
           String fieldName = validName ? ExcelUtils.getCellValueAsString(cell, formulaEvaluator) : (FIELD_PREFIX + (i++));
           
@@ -232,12 +235,11 @@ public class Excel97FileRecordReader extends RecordReader<Void, IndexedRecord> {
     
     List<Field> fields = schema.getFields();
     
-    int i = 0;
-    for (Cell cell : row) {
-      if(i < fields.size()) {
-        String content = ExcelUtils.getCellValueAsString(cell, formulaEvaluator);
-        value.put(i++, content);
-      }
+    int lastColumn = Math.max(row.getLastCellNum(), fields.size());
+    
+    for (int i = 0; i < lastColumn; i++) {
+      String content = ExcelUtils.getCellValueAsString(row.getCell(i, MissingCellPolicy.RETURN_BLANK_AS_NULL), formulaEvaluator);
+      value.put(i, content);
     }
 
     return true;
