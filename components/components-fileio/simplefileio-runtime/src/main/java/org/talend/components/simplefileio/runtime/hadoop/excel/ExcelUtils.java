@@ -105,10 +105,10 @@ public class ExcelUtils {
     private static final DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
     
     //TODO use this for number?
-    private static DecimalFormat df = new DecimalFormat("#.####################################", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+//    private static DecimalFormat df = new DecimalFormat("#.####################################", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
     
     //Numeric type (use data formatter to get number format right)
-    //private static final DataFormatter formatter = new DataFormatter(Locale.ENGLISH);//this is the one dataprep use for excel 97
+    private static final DataFormatter formatter = new DataFormatter(Locale.ENGLISH);//this is the one dataprep use for excel 97
     
     /**
      * Return the numeric value.
@@ -122,10 +122,10 @@ public class ExcelUtils {
         }
         
         if (cellValue == null) {
-            return df.format(cell.getNumericCellValue());
+            return formatter.formatCellValue(cell);
         }
 
-        return fromFormula ? cellValue.formatAsString() : df.format(cell.getNumericCellValue());
+        return fromFormula ? cellValue.formatAsString() : formatter.formatCellValue(cell);
     }
     
     public static boolean isEmptyRow(Row row) {
