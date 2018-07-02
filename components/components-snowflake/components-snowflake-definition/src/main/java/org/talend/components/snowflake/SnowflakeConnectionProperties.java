@@ -72,6 +72,13 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         }
     }
 
+    public enum Environment{
+        AWS,
+        AZURE
+    }
+
+    public Property<Environment> environment = newEnum("environment", Environment.class);
+
     public Property<Integer> loginTimeout = newInteger("loginTimeout");
 
     public Property<String> account = newString("account").setRequired(); //$NON-NLS-1$
@@ -122,7 +129,7 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         wizardForm.addColumn(widget(testConnection).setLongRunning(true).setWidgetType(Widget.BUTTON_WIDGET_TYPE));
 
         Form mainForm = Form.create(this, Form.MAIN);
-        mainForm.addRow(account);
+        mainForm.addRow(account).addColumn(environment);
         mainForm.addRow(userPassword.getForm(Form.MAIN));
         mainForm.addRow(warehouse);
         mainForm.addRow(schemaName);
@@ -253,7 +260,14 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         appendProperty("role", role, stringBuilder);
         appendProperty("tracing", tracing, stringBuilder);
 
-        return new StringBuilder().append("jdbc:snowflake://").append(account).append(".snowflakecomputing.com").append("/?")
+        Environment env = this.environment.getValue();
+        String azure = "";
+        if(env == Environment.AZURE){
+            azure = ".east-us-2.azure";
+        }
+        System.out.println("********** LOGS AZURE : "+azure);
+
+        return new StringBuilder().append("jdbc:snowflake://").append(account).append(azure).append(".snowflakecomputing.com").append("/?")
                 .append(stringBuilder).toString();
     }
 
