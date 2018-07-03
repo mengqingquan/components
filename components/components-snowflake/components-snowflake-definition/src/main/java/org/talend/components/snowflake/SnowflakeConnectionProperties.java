@@ -12,16 +12,8 @@
 // ============================================================================
 package org.talend.components.snowflake;
 
-import static org.talend.components.snowflake.SnowflakeDefinition.SOURCE_OR_SINK_CLASS;
-import static org.talend.components.snowflake.SnowflakeDefinition.USE_CURRENT_JVM_PROPS;
-import static org.talend.components.snowflake.SnowflakeDefinition.getSandboxedInstance;
-import static org.talend.daikon.properties.presentation.Widget.widget;
-import static org.talend.daikon.properties.property.PropertyFactory.newEnum;
-import static org.talend.daikon.properties.property.PropertyFactory.newInteger;
-import static org.talend.daikon.properties.property.PropertyFactory.newString;
-
-import java.util.Properties;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.talend.components.api.properties.ComponentPropertiesImpl;
 import org.talend.components.api.properties.ComponentReferenceProperties;
 import org.talend.components.common.UserPasswordProperties;
@@ -38,10 +30,23 @@ import org.talend.daikon.sandbox.SandboxedInstance;
 import org.talend.daikon.serialize.PostDeserializeSetup;
 import org.talend.daikon.serialize.migration.SerializeSetVersion;
 
-public class SnowflakeConnectionProperties extends ComponentPropertiesImpl implements SnowflakeProvideConnectionProperties, SerializeSetVersion {
+import java.util.Properties;
 
-    private static final I18nMessages i18nMessages = GlobalI18N.getI18nMessageProvider()
-            .getI18nMessages(SnowflakeConnectionProperties.class);
+import static org.talend.components.snowflake.SnowflakeDefinition.SOURCE_OR_SINK_CLASS;
+import static org.talend.components.snowflake.SnowflakeDefinition.USE_CURRENT_JVM_PROPS;
+import static org.talend.components.snowflake.SnowflakeDefinition.getSandboxedInstance;
+import static org.talend.daikon.properties.presentation.Widget.widget;
+import static org.talend.daikon.properties.property.PropertyFactory.newEnum;
+import static org.talend.daikon.properties.property.PropertyFactory.newInteger;
+import static org.talend.daikon.properties.property.PropertyFactory.newString;
+
+public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
+        implements SnowflakeProvideConnectionProperties, SerializeSetVersion {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SnowflakeConnectionProperties.class);
+
+    private static final I18nMessages i18nMessages =
+            GlobalI18N.getI18nMessageProvider().getI18nMessages(SnowflakeConnectionProperties.class);
 
     private static final int SPECIFY_LOGIN_TIMEOUT_VERSION_NUMBER = 1;
 
@@ -55,15 +60,8 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
     public Property<String> name = newString("name").setRequired();
 
     public enum Tracing {
-        OFF("OFF"),
-        SEVERE("SEVERE"),
-        WARNING("WARNING"),
-        INFO("INFO"),
-        CONFIG("CONFIG"),
-        FINE("FINE"),
-        FINER("FINER"),
-        FINEST("FINEST"),
-        ALL("ALL");
+        OFF("OFF"), SEVERE("SEVERE"), WARNING("WARNING"), INFO("INFO"), CONFIG("CONFIG"), FINE("FINE"), FINER(
+                "FINER"), FINEST("FINEST"), ALL("ALL");
 
         String value;
 
@@ -72,12 +70,13 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         }
     }
 
-    public enum Environment{
-        AWS,
-        AZURE
+    public enum Provider {
+        AWS, AZURE
     }
 
-    public Property<Environment> environment = newEnum("environment", Environment.class);
+    public Property<Provider> provider = newEnum("provider", Provider.class);
+
+    public Property<AzureRegion> azureRegion = newEnum("azureRegion", AzureRegion.class);
 
     public Property<Integer> loginTimeout = newInteger("loginTimeout");
 
@@ -100,8 +99,8 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
 
     public PresentationItem advanced = new PresentationItem("advanced", "Advanced...");
 
-    public ComponentReferenceProperties<SnowflakeConnectionProperties> referencedComponent = new ComponentReferenceProperties<>(
-            "referencedComponent", TSnowflakeConnectionDefinition.COMPONENT_NAME);
+    public ComponentReferenceProperties<SnowflakeConnectionProperties> referencedComponent =
+            new ComponentReferenceProperties<>("referencedComponent", TSnowflakeConnectionDefinition.COMPONENT_NAME);
 
     public SnowflakeConnectionProperties(String name) {
         super(name);
@@ -112,6 +111,8 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         super.setupProperties();
         loginTimeout.setValue(DEFAULT_LOGIN_TIMEOUT);
         tracing.setValue(Tracing.OFF);
+        provider.setValue(Provider.AWS);
+        azureRegion.setValue(AzureRegion.EAST_US_2);
     }
 
     @Override
@@ -120,6 +121,8 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
 
         Form wizardForm = Form.create(this, FORM_WIZARD);
         wizardForm.addRow(name);
+        wizardForm.addRow(provider);
+        wizardForm.addRow(azureRegion);
         wizardForm.addRow(account);
         wizardForm.addRow(userPassword.getForm(Form.MAIN));
         wizardForm.addRow(warehouse);
@@ -129,7 +132,8 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         wizardForm.addColumn(widget(testConnection).setLongRunning(true).setWidgetType(Widget.BUTTON_WIDGET_TYPE));
 
         Form mainForm = Form.create(this, Form.MAIN);
-        mainForm.addRow(account).addColumn(environment);
+        mainForm.addRow(provider).addColumn(azureRegion);
+        mainForm.addRow(account);
         mainForm.addRow(userPassword.getForm(Form.MAIN));
         mainForm.addRow(warehouse);
         mainForm.addRow(schemaName);
@@ -160,6 +164,9 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         form.getWidget(warehouse.getName()).setHidden(hidden);
         form.getWidget(schemaName.getName()).setHidden(hidden);
         form.getWidget(db.getName()).setHidden(hidden);
+
+        form.getWidget(provider.getName()).setHidden(hidden);
+        this.setAzureRegionHidden(form, hidden);
     }
 
     @Override
@@ -175,6 +182,8 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
                 // Do nothing
                 form.setHidden(false);
             }
+
+            this.setAzureRegionHidden(form, false);
         }
 
         if (form.getName().equals(Form.ADVANCED)) {
@@ -184,6 +193,18 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
                 form.setHidden(false);
             }
         }
+    }
+
+    private void setAzureRegionHidden(Form form, boolean forceHidden) {
+        Provider provider = this.provider.getValue();
+        boolean isNotNull = provider != null;
+        boolean isAWS = provider == Provider.AWS;
+        boolean isHidden = isNotNull && isAWS;
+        form.getWidget(azureRegion.getName()).setHidden(forceHidden || isHidden);
+    }
+
+    public void afterProvider() {
+        this.refreshLayout(getForm(Form.MAIN));
     }
 
     public ValidationResult validateTestConnection() throws Exception {
@@ -260,15 +281,24 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         appendProperty("role", role, stringBuilder);
         appendProperty("tracing", tracing, stringBuilder);
 
-        Environment env = this.environment.getValue();
+        Provider prov = this.provider.getValue();
         String azure = "";
-        if(env == Environment.AZURE){
-            azure = ".east-us-2.azure";
+        if (prov == Provider.AZURE) {
+            String region = this.azureRegion.getValue().getRegion();
+            azure = "." + region + ".azure";
         }
-        System.out.println("********** LOGS AZURE : "+azure);
+        String url = new StringBuilder().append("jdbc:snowflake://")
+                .append(account)
+                .append(azure)
+                .append(".snowflakecomputing.com")
+                .append("/?")
+                .append(stringBuilder)
+                .toString();
 
-        return new StringBuilder().append("jdbc:snowflake://").append(account).append(azure).append(".snowflakecomputing.com").append("/?")
-                .append(stringBuilder).toString();
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Snowflake connection jdbc URL : " + url);
+
+        return url;
     }
 
     private void appendProperty(String propertyName, String propertyValue, StringBuilder builder) {
