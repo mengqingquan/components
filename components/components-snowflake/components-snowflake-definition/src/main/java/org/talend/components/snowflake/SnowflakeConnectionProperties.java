@@ -60,8 +60,15 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
     public Property<String> name = newString("name").setRequired();
 
     public enum Tracing {
-        OFF("OFF"), SEVERE("SEVERE"), WARNING("WARNING"), INFO("INFO"), CONFIG("CONFIG"), FINE("FINE"), FINER(
-                "FINER"), FINEST("FINEST"), ALL("ALL");
+        OFF("OFF"),
+        SEVERE("SEVERE"),
+        WARNING("WARNING"),
+        INFO("INFO"),
+        CONFIG("CONFIG"),
+        FINE("FINE"),
+        FINER("FINER"),
+        FINEST("FINEST"),
+        ALL("ALL");
 
         String value;
 
@@ -99,8 +106,7 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
 
     public PresentationItem advanced = new PresentationItem("advanced", "Advanced...");
 
-    public ComponentReferenceProperties<SnowflakeConnectionProperties> referencedComponent =
-            new ComponentReferenceProperties<>("referencedComponent", TSnowflakeConnectionDefinition.COMPONENT_NAME);
+    public ComponentReferenceProperties<SnowflakeConnectionProperties> referencedComponent = new ComponentReferenceProperties<>("referencedComponent", TSnowflakeConnectionDefinition.COMPONENT_NAME);
 
     public SnowflakeConnectionProperties(String name) {
         super(name);
