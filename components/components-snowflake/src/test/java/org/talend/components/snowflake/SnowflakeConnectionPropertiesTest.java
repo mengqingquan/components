@@ -45,6 +45,10 @@ public class SnowflakeConnectionPropertiesTest {
 
     private static final String ROLE = "role";
 
+    private static final SnowflakeConnectionProperties.Provider provider = SnowflakeConnectionProperties.Provider.AZURE;
+
+    private static final AzureRegion region = AzureRegion.WEST_EUROPE;
+
     private SnowflakeConnectionProperties snowflakeConnectionProperties;
 
     @Rule
@@ -62,6 +66,11 @@ public class SnowflakeConnectionPropertiesTest {
         snowflakeConnectionProperties.role.setValue(ROLE);
     }
 
+    private void setUpAzure() {
+        snowflakeConnectionProperties.provider.setValue(provider);
+        snowflakeConnectionProperties.azureRegion.setValue(region);
+    }
+
     /**
      * Checks {@link SnowflakeConnectionProperties#getConnectionUrl()} returns {@link java.lang.String} snowflake url
      * when all params are valid
@@ -71,6 +80,28 @@ public class SnowflakeConnectionPropertiesTest {
         StringBuilder builder = new StringBuilder();
 
         String expectedUrl = builder.append("jdbc:snowflake://").append(ACCOUNT).append(".").append("snowflakecomputing.com/")
+                .append("?").append("warehouse=").append(WAREHOUSE).append("&").append("db=").append(DB).append("&")
+                .append("schema=").append(SCHEMA).append("&").append("role=").append(ROLE).append("&").append("tracing=OFF")
+                .toString();
+
+        String resultUrl = snowflakeConnectionProperties.getConnectionUrl();
+
+        LOGGER.debug("result url: " + resultUrl);
+
+        Assert.assertEquals(expectedUrl, resultUrl);
+    }
+
+    /**
+     * Checks {@link SnowflakeConnectionProperties#getConnectionUrl()} returns {@link java.lang.String} snowflake url
+     * when all params are valid
+     */
+    @Test
+    public void testGetConnectionUrlValidParamsAzure() throws Exception {
+        this.setUpAzure();
+
+        StringBuilder builder = new StringBuilder();
+
+        String expectedUrl = builder.append("jdbc:snowflake://").append(ACCOUNT).append(".").append(region.getRegion()).append(".azure").append(".").append("snowflakecomputing.com/")
                 .append("?").append("warehouse=").append(WAREHOUSE).append("&").append("db=").append(DB).append("&")
                 .append("schema=").append(SCHEMA).append("&").append("role=").append(ROLE).append("&").append("tracing=OFF")
                 .toString();
