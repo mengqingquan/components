@@ -301,8 +301,9 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
                 .append(stringBuilder)
                 .toString();
 
-        if (LOGGER.isDebugEnabled())
+        if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Snowflake connection jdbc URL : " + url);
+        }
 
         return url;
     }
