@@ -287,12 +287,18 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl imple
         appendProperty("role", role, stringBuilder);
         appendProperty("tracing", tracing, stringBuilder);
 
-        return new StringBuilder().append("jdbc:snowflake://")
+         String url = new StringBuilder().append("jdbc:snowflake://")
                 .append(account)
                 .append(azure)
                 .append(".snowflakecomputing.com")
                 .append("/?")
                 .append(stringBuilder).toString();
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Snowflake connection jdbc URL : " + url);
+        }
+
+        return url;
     }
 
     private void appendProperty(String propertyName, String propertyValue, StringBuilder builder) {
