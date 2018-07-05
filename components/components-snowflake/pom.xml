@@ -11,6 +11,7 @@
 
     <name>Components - Snowflake</name>
     <artifactId>components-snowflake</artifactId>
+    <version>0.23.2</version>
     <packaging>bundle</packaging>
     <dependencies>
         <dependency>
