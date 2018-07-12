@@ -18,15 +18,19 @@ import org.talend.daikon.properties.ValidationResult;
 import org.talend.daikon.properties.presentation.Form;
 import org.talend.daikon.properties.property.Property;
 import org.talend.daikon.properties.property.PropertyFactory;
+import org.talend.daikon.serialize.PostDeserializeSetup;
+import org.talend.daikon.serialize.migration.SerializeSetVersion;
 
 /**
  * Mock dataset properties for tests.
  */
-public class MockDatasetProperties extends PropertiesImpl implements DatasetProperties<MockDatastoreProperties> {
+public class MockDatasetProperties extends PropertiesImpl implements DatasetProperties<MockDatastoreProperties>, SerializeSetVersion {
 
     public Property<String> tag = PropertyFactory.newString("tag");
 
     public Property<Integer> tagId = PropertyFactory.newInteger("tagId");
+    
+    public Property<Boolean> newTag = PropertyFactory.newBoolean("newTag", true);
 
     /**
      * Default constructor.
@@ -43,6 +47,7 @@ public class MockDatasetProperties extends PropertiesImpl implements DatasetProp
         Form mainForm = new Form(this, Form.MAIN);
         mainForm.addColumn(tag);
         mainForm.addColumn(tagId);
+        mainForm.addColumn(newTag);
     }
 
     public ValidationResult validateTag() {
@@ -62,4 +67,22 @@ public class MockDatasetProperties extends PropertiesImpl implements DatasetProp
     public void setDatastoreProperties(MockDatastoreProperties datastoreProperties) {
 
     }
+
+    @Override
+    public int getVersionNumber() {
+      return 1;
+    }
+    
+    @Override
+    public boolean postDeserialize(int version, PostDeserializeSetup setup, boolean persistent) {
+        boolean migrated = super.postDeserialize(version, setup, persistent);
+
+        if(version < this.getVersionNumber()) {
+            migrated = true;
+            this.newTag.setValue(false);
+        }
+
+        return migrated;
+    }
+    
 }

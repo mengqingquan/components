@@ -20,11 +20,11 @@ import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
 import static org.talend.components.service.rest.PropertiesController.IMAGE_SVG_VALUE;
 import static org.talend.components.service.rest.configuration.RequestParameterLocaleResolver.LANGUAGE_QUERY_PARAMETER_NAME;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.Locale;
 
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 import org.talend.components.service.rest.AbstractSpringIntegrationTests;
 import org.talend.components.service.rest.ServiceConstants;
@@ -36,6 +36,8 @@ import org.talend.daikon.serialize.SerializerDeserializer.Deserialized;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jayway.restassured.response.Response;
+
+import shaded.org.apache.commons.io.IOUtils;
 
 public class PropertiesControllerImplTest extends AbstractSpringIntegrationTests {
 
@@ -269,6 +271,20 @@ public class PropertiesControllerImplTest extends AbstractSpringIntegrationTests
                 .post(getVersionPrefix() + "/properties/uispec");
         assertNotNull(response);
         assertEquals(getMockDatasetMainFormUISpecs(), response.asString());
+    }
+    
+    @Test
+    public void testMigration() throws Exception {
+        String oldcontent = IOUtils.toString(this.getClass().getResourceAsStream("old_properties.txt"));
+        Response response = given().accept(ServiceConstants.UI_SPEC_CONTENT_TYPE) //
+                .expect() //
+                .statusCode(200).log().ifError() //
+                .with() //
+                .content(oldcontent) //
+                .contentType(ServiceConstants.JSONIO_CONTENT_TYPE) //
+                .post(getVersionPrefix() + "/properties/uispec");
+        assertNotNull(response);
+        Assert.assertTrue(response.asString().contains("\"newTag\":false"));
     }
 
 }
