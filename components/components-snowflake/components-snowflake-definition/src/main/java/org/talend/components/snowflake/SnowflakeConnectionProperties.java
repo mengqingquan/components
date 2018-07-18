@@ -197,6 +197,7 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
                 setHiddenProps(form, false);
                 // Do nothing
                 form.setHidden(false);
+                form.getWidget(region.getName()).setHidden(useCustomRegion.getValue());
             }
         }
 
