@@ -12,6 +12,7 @@
 // ============================================================================
 package org.talend.components.snowflake;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.talend.components.api.properties.ComponentPropertiesImpl;
@@ -36,6 +37,7 @@ import static org.talend.components.snowflake.SnowflakeDefinition.SOURCE_OR_SINK
 import static org.talend.components.snowflake.SnowflakeDefinition.USE_CURRENT_JVM_PROPS;
 import static org.talend.components.snowflake.SnowflakeDefinition.getSandboxedInstance;
 import static org.talend.daikon.properties.presentation.Widget.widget;
+import static org.talend.daikon.properties.property.PropertyFactory.newBoolean;
 import static org.talend.daikon.properties.property.PropertyFactory.newEnum;
 import static org.talend.daikon.properties.property.PropertyFactory.newInteger;
 import static org.talend.daikon.properties.property.PropertyFactory.newString;
@@ -77,17 +79,11 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
         }
     }
 
-    public enum Provider {
-        AWS, AZURE
-    }
-
-    public Property<Provider> provider = newEnum("provider", Provider.class);
-
-    public Property<AzureRegion> azureRegion = newEnum("azureRegion", AzureRegion.class);
-
     public Property<Integer> loginTimeout = newInteger("loginTimeout");
 
     public Property<String> account = newString("account").setRequired(); //$NON-NLS-1$
+
+    public Property<SnowflakeRegion> region = newEnum("region", SnowflakeRegion.class);
 
     public UserPasswordProperties userPassword = new UserPasswordProperties(USERPASSWORD);
 
@@ -96,6 +92,10 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
     public Property<String> db = newString("db").setRequired(); //$NON-NLS-1$
 
     public Property<String> schemaName = newString("schemaName").setRequired(); //$NON-NLS-1$
+
+    public Property<Boolean> useCustomRegion = newBoolean("useCustomRegion");
+
+    public Property<String> customRegionID = newString("customRegionID").setRequired();
 
     public Property<String> role = newString("role"); //$NON-NLS-1$
 
@@ -117,8 +117,8 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
         super.setupProperties();
         loginTimeout.setValue(DEFAULT_LOGIN_TIMEOUT);
         tracing.setValue(Tracing.OFF);
-        provider.setValue(Provider.AWS);
-        azureRegion.setValue(AzureRegion.EAST_US_2);
+        region.setValue(SnowflakeRegion.AWS_US_WEST);
+        useCustomRegion.setValue(false);
     }
 
     @Override
@@ -127,9 +127,8 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
 
         Form wizardForm = Form.create(this, FORM_WIZARD);
         wizardForm.addRow(name);
-        wizardForm.addRow(provider);
-        wizardForm.addRow(azureRegion);
         wizardForm.addRow(account);
+        wizardForm.addRow(region);
         wizardForm.addRow(userPassword.getForm(Form.MAIN));
         wizardForm.addRow(warehouse);
         wizardForm.addRow(schemaName);
@@ -138,14 +137,16 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
         wizardForm.addColumn(widget(testConnection).setLongRunning(true).setWidgetType(Widget.BUTTON_WIDGET_TYPE));
 
         Form mainForm = Form.create(this, Form.MAIN);
-        mainForm.addRow(provider).addColumn(azureRegion);
         mainForm.addRow(account);
+        mainForm.addRow(region);
         mainForm.addRow(userPassword.getForm(Form.MAIN));
         mainForm.addRow(warehouse);
         mainForm.addRow(schemaName);
         mainForm.addRow(db);
 
         Form advancedForm = Form.create(this, Form.ADVANCED);
+        advancedForm.addRow(useCustomRegion);
+        advancedForm.addColumn(customRegionID);
         advancedForm.addRow(loginTimeout);
         advancedForm.addRow(widget(tracing).setWidgetType(Widget.ENUMERATION_WIDGET_TYPE));
         advancedForm.addRow(role);
@@ -158,6 +159,17 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
         refForm.addRow(mainForm);
     }
 
+    public void afterAdvanced() {
+        refreshLayout(getForm(FORM_WIZARD));
+    }
+
+    public void afterUseCustomRegion() {
+        refreshLayout(getForm(Form.MAIN));
+        refreshLayout(getForm(Form.REFERENCE));
+        refreshLayout(getForm(Form.ADVANCED));
+        refreshLayout(getForm(FORM_WIZARD));
+    }
+
     public void afterReferencedComponent() {
         refreshLayout(getForm(Form.MAIN));
         refreshLayout(getForm(Form.REFERENCE));
@@ -167,12 +179,10 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
     protected void setHiddenProps(Form form, boolean hidden) {
         form.getWidget(USERPASSWORD).setHidden(hidden);
         form.getWidget(account.getName()).setHidden(hidden);
+        form.getWidget(region.getName()).setHidden(hidden || useCustomRegion.getValue());
         form.getWidget(warehouse.getName()).setHidden(hidden);
         form.getWidget(schemaName.getName()).setHidden(hidden);
         form.getWidget(db.getName()).setHidden(hidden);
-
-        form.getWidget(provider.getName()).setHidden(hidden);
-        this.setAzureRegionHidden(form, hidden);
     }
 
     @Override
@@ -188,8 +198,6 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
                 // Do nothing
                 form.setHidden(false);
             }
-
-            this.setAzureRegionHidden(form, false);
         }
 
         if (form.getName().equals(Form.ADVANCED)) {
@@ -198,19 +206,9 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
             } else {
                 form.setHidden(false);
             }
+
+            getForm(Form.ADVANCED).getWidget(customRegionID).setVisible(useCustomRegion.getValue());
         }
-    }
-
-    private void setAzureRegionHidden(Form form, boolean forceHidden) {
-        Provider provider = this.provider.getValue();
-        boolean isNotNull = provider != null;
-        boolean isAWS = provider == Provider.AWS;
-        boolean isHidden = isNotNull && isAWS;
-        form.getWidget(azureRegion.getName()).setHidden(forceHidden || isHidden);
-    }
-
-    public void afterProvider() {
-        this.refreshLayout(getForm(Form.MAIN));
     }
 
     public ValidationResult validateTestConnection() throws Exception {
@@ -268,44 +266,45 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
     }
 
     public String getConnectionUrl() {
-        StringBuilder stringBuilder = new StringBuilder();
+        StringBuilder connectionParams = new StringBuilder();
         String account = this.account.getStringValue();
 
         if (account == null || account.isEmpty()) {
             throw new IllegalArgumentException(i18nMessages.getMessage("error.missingAccount"));
         }
 
+        String regionID = useCustomRegion.getValue()
+                ? this.customRegionID.getValue()
+                : this.region.getValue().getRegionID();
         String warehouse = this.warehouse.getStringValue();
         String db = this.db.getStringValue();
         String schema = this.schemaName.getStringValue();
         String role = this.role.getStringValue();
         String tracing = this.tracing.getStringValue();
 
-        appendProperty("warehouse", warehouse, stringBuilder);
-        appendProperty("db", db, stringBuilder);
-        appendProperty("schema", schema, stringBuilder);
-        appendProperty("role", role, stringBuilder);
-        appendProperty("tracing", tracing, stringBuilder);
+        appendProperty("warehouse", warehouse, connectionParams);
+        appendProperty("db", db, connectionParams);
+        appendProperty("schema", schema, connectionParams);
+        appendProperty("role", role, connectionParams);
+        appendProperty("tracing", tracing, connectionParams);
 
-        Provider prov = this.provider.getValue();
-        String azure = "";
-        if (prov == Provider.AZURE) {
-            String region = this.azureRegion.getValue().getRegion();
-            azure = "." + region + ".azure";
+        StringBuilder url = new StringBuilder()
+                .append("jdbc:snowflake://")
+                .append(account);
+
+        if (!StringUtils.isEmpty(regionID)) {
+            url.append(".").append(regionID);
         }
-        String url = new StringBuilder().append("jdbc:snowflake://")
-                .append(account)
-                .append(azure)
-                .append(".snowflakecomputing.com")
+
+        url.append(".snowflakecomputing.com")
                 .append("/?")
-                .append(stringBuilder)
-                .toString();
+                .append(connectionParams);
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Snowflake connection jdbc URL : " + url);
         }
 
-        return url;
+        return url.toString();
     }
 
     private void appendProperty(String propertyName, String propertyValue, StringBuilder builder) {

@@ -51,9 +51,7 @@ public class SnowflakeConnectionPropertiesTest {
 
     private static final String ROLE = "role";
 
-    private static final SnowflakeConnectionProperties.Provider provider = SnowflakeConnectionProperties.Provider.AZURE;
-
-    private static final AzureRegion region = AzureRegion.WEST_EUROPE;
+    private static final SnowflakeRegion AZURE_REGION = SnowflakeRegion.AZURE_EAST_US_2;
 
     private SnowflakeConnectionProperties snowflakeConnectionProperties;
 
@@ -72,9 +70,8 @@ public class SnowflakeConnectionPropertiesTest {
         snowflakeConnectionProperties.role.setValue(ROLE);
     }
 
-    private void setUpAzure() {
-        snowflakeConnectionProperties.provider.setValue(provider);
-        snowflakeConnectionProperties.azureRegion.setValue(region);
+    private void setUpAzureRegion() {
+        snowflakeConnectionProperties.region.setValue(AZURE_REGION);
     }
 
     /**
@@ -103,11 +100,11 @@ public class SnowflakeConnectionPropertiesTest {
      */
     @Test
     public void testGetConnectionUrlValidParamsAzure() throws Exception {
-        this.setUpAzure();
+        this.setUpAzureRegion();
 
         StringBuilder builder = new StringBuilder();
 
-        String expectedUrl = builder.append("jdbc:snowflake://").append(ACCOUNT).append(".").append(region.getRegion()).append(".azure").append(".").append("snowflakecomputing.com/")
+        String expectedUrl = builder.append("jdbc:snowflake://").append(ACCOUNT).append(".").append(AZURE_REGION.getRegionID()).append(".").append("snowflakecomputing.com/")
                 .append("?").append("warehouse=").append(WAREHOUSE).append("&").append("db=").append(DB).append("&")
                 .append("schema=").append(SCHEMA).append("&").append("role=").append(ROLE).append("&").append("tracing=OFF")
                 .toString();
