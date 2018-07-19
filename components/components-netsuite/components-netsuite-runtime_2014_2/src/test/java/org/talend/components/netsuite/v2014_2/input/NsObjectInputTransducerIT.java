@@ -20,6 +20,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.IndexedRecord;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.talend.components.netsuite.AbstractNetSuiteTestBase;
 import org.talend.components.netsuite.NetSuiteDatasetRuntimeImpl;
@@ -36,6 +37,7 @@ import com.netsuite.webservices.v2014_2.platform.core.Record;
 /**
  *
  */
+@Ignore
 public class NsObjectInputTransducerIT extends AbstractNetSuiteTestBase {
     private static NetSuiteWebServiceTestFixture webServiceTestFixture;
 

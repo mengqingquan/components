@@ -15,6 +15,7 @@ package org.talend.components.netsuite;
 
 import static org.ops4j.pax.exam.CoreOptions.*;
 
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
@@ -25,6 +26,7 @@ import org.talend.components.api.ComponentsPaxExamOptions;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
+@Ignore
 public class OsgiNetSuiteComponentTestIT extends NetSuiteComponentTestBase {
 
     @Configuration

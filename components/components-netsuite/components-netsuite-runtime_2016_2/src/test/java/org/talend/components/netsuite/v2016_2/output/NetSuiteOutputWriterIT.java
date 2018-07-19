@@ -31,6 +31,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.IndexedRecord;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.talend.components.api.component.runtime.Result;
 import org.talend.components.api.container.RuntimeContainer;
@@ -84,6 +85,7 @@ import com.netsuite.webservices.v2016_2.setup.customization.CustomRecord;
 /**
  *
  */
+@Ignore
 public class NetSuiteOutputWriterIT extends AbstractNetSuiteTestBase {
     private static NetSuiteWebServiceTestFixture webServiceTestFixture;
 

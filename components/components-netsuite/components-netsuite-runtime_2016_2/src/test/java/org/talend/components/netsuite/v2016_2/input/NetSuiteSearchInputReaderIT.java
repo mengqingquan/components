@@ -25,6 +25,7 @@ import org.apache.avro.generic.IndexedRecord;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.talend.components.api.container.RuntimeContainer;
 import org.talend.components.netsuite.AbstractNetSuiteTestBase;
@@ -46,6 +47,7 @@ import com.netsuite.webservices.v2016_2.lists.accounting.types.AccountType;
 /**
  *
  */
+@Ignore
 public class NetSuiteSearchInputReaderIT extends AbstractNetSuiteTestBase {
     private static NetSuiteWebServiceTestFixture webServiceTestFixture;
 
