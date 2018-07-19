@@ -179,7 +179,7 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
     protected void setHiddenProps(Form form, boolean hidden) {
         form.getWidget(USERPASSWORD).setHidden(hidden);
         form.getWidget(account.getName()).setHidden(hidden);
-        form.getWidget(region.getName()).setHidden(hidden || useCustomRegion.getValue());
+        form.getWidget(region.getName()).setHidden(hidden);
         form.getWidget(warehouse.getName()).setHidden(hidden);
         form.getWidget(schemaName.getName()).setHidden(hidden);
         form.getWidget(db.getName()).setHidden(hidden);
@@ -197,6 +197,7 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
                 setHiddenProps(form, false);
                 // Do nothing
                 form.setHidden(false);
+
                 form.getWidget(region.getName()).setHidden(useCustomRegion.getValue());
             }
         }
@@ -206,9 +207,9 @@ public class SnowflakeConnectionProperties extends ComponentPropertiesImpl
                 form.setHidden(true);
             } else {
                 form.setHidden(false);
-            }
 
-            getForm(Form.ADVANCED).getWidget(customRegionID).setVisible(useCustomRegion.getValue());
+                getForm(Form.ADVANCED).getWidget(customRegionID).setVisible(useCustomRegion.getValue());
+            }
         }
     }
 
