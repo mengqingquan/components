@@ -19,7 +19,6 @@ import java.util.Map;
 
 import org.apache.avro.generic.IndexedRecord;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -248,7 +247,6 @@ public class SalesforceBulkLoadTestIT extends SalesforceTestBase {
 	}
 
 	@Test
-	@Ignore
 	public void testUpsert() throws Throwable {
 		List<String> ids = util.createTestData();
 
