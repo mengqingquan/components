@@ -24,7 +24,6 @@ import java.util.Collection;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.talend.components.netsuite.AbstractNetSuiteTestBase;
 import org.talend.components.netsuite.NetSuiteWebServiceTestFixture;
@@ -45,7 +44,6 @@ import com.netsuite.webservices.v2016_2.platform.core.Record;
 /**
  *
  */
-@Ignore
 public class NetSuiteClientServiceIT extends AbstractNetSuiteTestBase {
     protected static NetSuiteWebServiceTestFixture webServiceTestFixture;
     private static NetSuiteClientService<?> connection;
