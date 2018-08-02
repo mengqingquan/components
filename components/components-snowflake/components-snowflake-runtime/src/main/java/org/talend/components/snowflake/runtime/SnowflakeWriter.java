@@ -27,6 +27,7 @@ import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.generic.IndexedRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.talend.components.api.component.runtime.Result;
 import org.talend.components.api.component.runtime.WriteOperation;
 import org.talend.components.api.component.runtime.WriterWithFeedback;
@@ -145,7 +146,8 @@ public class SnowflakeWriter implements WriterWithFeedback<Result, IndexedRecord
             Field f = collectedFields.get(i);
             Field remoteTableField = remoteTableFields.get(i);
             if (f == null) {
-                row[i] = remoteTableField.defaultVal();
+                Object defaultValue = remoteTableField.defaultVal();
+                row[i] = StringUtils.EMPTY.equals(defaultValue) ? null : defaultValue;
                 continue;
             }
             Object inputValue = input.get(f.pos());
